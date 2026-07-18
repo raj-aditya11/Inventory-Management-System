@@ -3,6 +3,7 @@ function Input({
   type = "text",
   placeholder,
   value,
+  defaultValue,
   onChange,
   name,
   disabled = false,
@@ -33,6 +34,7 @@ function Input({
           name={name}
           placeholder={placeholder}
           value={value}
+          defaultValue={defaultValue}
           onChange={onChange}
           disabled={disabled}
           required={required}

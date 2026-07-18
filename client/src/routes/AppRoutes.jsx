@@ -5,7 +5,7 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import {inventoryHolderMenu, adminMenu, userMenu} from "../data/navigation";
 
 //Login
-import Login from "../pages/Login/Login";
+import Login from "../pages/Auth/Login";
 
 //Admin
 import AdminDashboard from "../pages/Admin/Dashboard";
@@ -34,7 +34,6 @@ function AppRoutes() {
 
                 {/*...Login...*/}
                 <Route path="/" element={<Login />} />
-                <Route path="/login" element={<Login />} />
 
                 {/*...Admin...*/}
                 <Route

@@ -40,7 +40,6 @@ export const inventoryData = [
     status: "Available",
   },
 ];
-
 export const transferData = [
   {
     id: "TR001",
@@ -67,7 +66,6 @@ export const transferData = [
     requestedDate: "12 Jul 2026",
   },
 ];
-
 export const disposalData = [
   {
     id: "DR001",
@@ -123,7 +121,6 @@ export const usersData = [
     status: "Inactive",
   },
 ];
-
 export const groupsData = [
   {
     id: "G001",
@@ -144,3 +141,109 @@ export const groupsData = [
     members: "6 users",
   },
 ];
+
+
+
+export const userActivity = [
+  {
+    asset: "Dell Latitude 5420",
+    activity: "Assigned",
+    date: "23 Jul 2026",
+  },
+  {
+    asset: "HP LaserJet Pro",
+    activity: "Transfer Requested",
+    date: "22 Jul 2026",
+  },
+  {
+    asset: "Canon Scanner",
+    activity: "Disposal Requested",
+    date: "21 Jul 2026",
+  },
+  {
+    asset: "Dell Monitor",
+    activity: "Returned",
+    date: "18 Jul 2026",
+  },
+];
+export const myAssetsData = [
+  {
+    assetId: "A001",
+    asset: "Dell Latitude 5420",
+    category: "Laptop",
+    assignedDate: "15 Jul 2026",
+    condition: "Good",
+    status: "Assigned",
+  },
+  {
+    assetId: "A002",
+    asset: "HP LaserJet Pro",
+    category: "Printer",
+    assignedDate: "10 Jul 2026",
+    condition: "Excellent",
+    status: "Assigned",
+  },
+  {
+    assetId: "A003",
+    asset: "Dell Monitor",
+    category: "Monitor",
+    assignedDate: "05 Jul 2026",
+    condition: "Needs Service",
+    status: "Maintenance",
+  },
+];
+export const transferRequestsData = [
+  {
+    requestId: "TR001",
+    asset: "Dell Latitude 5420",
+    transferTo: "Rahul Sharma",
+    requestedDate: "24 Jul 2026",
+    status: "Pending",
+  },
+  {
+    requestId: "TR002",
+    asset: "HP LaserJet Pro",
+    transferTo: "Priya Singh",
+    requestedDate: "20 Jul 2026",
+    status: "Approved",
+  },
+  {
+    requestId: "TR003",
+    asset: "Dell Monitor",
+    transferTo: "Aman Verma",
+    requestedDate: "18 Jul 2026",
+    status: "Rejected",
+  },
+];
+export const disposalRequestsData = [
+  {
+    requestId: "DR001",
+    asset: "Dell Latitude 5420",
+    reason: "Hardware Failure",
+    requestedDate: "25 Jul 2026",
+    status: "Pending",
+  },
+  {
+    requestId: "DR002",
+    asset: "HP LaserJet Pro",
+    reason: "Outdated Equipment",
+    requestedDate: "21 Jul 2026",
+    status: "Approved",
+  },
+  {
+    requestId: "DR003",
+    asset: "Dell Monitor",
+    reason: "Physical Damage",
+    requestedDate: "18 Jul 2026",
+    status: "Rejected",
+  },
+];
+export const profileData = {
+  name: "Aditya Raj",
+  email: "aditya@example.com",
+  phone: "+91 9876543210",
+  employeeId: "EMP001",
+  department: "IT Department",
+  role: "User",
+  group: "Development",
+};
