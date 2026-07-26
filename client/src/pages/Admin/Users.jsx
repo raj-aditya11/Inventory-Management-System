@@ -11,7 +11,7 @@ import Table from "../../components/common/Table";
 import { usersData } from "../../data/mockData";
 
 function Users() {
-    const [showForm, setShowForm] = useState(false);
+    const [showForm, setShowForm] = useState(false);    
 
     const roleOptions = [
         { value: "Admin", label: "Admin" },
@@ -22,6 +22,31 @@ function Users() {
         { value: "IT", label: "IT Department" },
         { value: "HR", label: "Human Resources" },
         { value: "Accounts", label: "Accounts" },
+    ];
+    const cadreOptions = [
+        { value: "Scientist", label: "Scientist" },
+        { value: "Technical", label: "Technical" },
+        { value: "Administrative", label: "Administrative" },
+        { value: "Contractual", label: "Contractual" },
+    ];
+
+    const designationOptions = [
+        { value: "Scientist C", label: "Scientist C" },
+        { value: "Scientist D", label: "Scientist D" },
+        { value: "Senior Technician", label: "Senior Technician" },
+        { value: "Assistant", label: "Assistant" },
+    ];
+
+    const internalDesignationOptions = [
+        { value: "Inventory Holder", label: "Inventory Holder" },
+        { value: "Store Incharge", label: "Store Incharge" },
+        { value: "Lab Incharge", label: "Lab Incharge" },
+        { value: "Project Lead", label: "Project Lead" },
+    ];
+
+    const statusOptions = [
+        { value: "Active", label: "Active" },
+        { value: "Inactive", label: "Inactive" },
     ];
 
     const columns = [
@@ -128,55 +153,87 @@ function Users() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    <Input
-                    label="Name"
-                    placeholder="Enter full name"
-                    />
+                            <Input
+                                label="Name *" 
+                                placeholder="e.g. Rahul Sharma" 
+                            />
 
-                    <Input
-                    label="Email"
-                    type="email"
-                    placeholder="Enter email"
-                    />
+                            <Input
+                                label="Email *"
+                                type="email"
+                                placeholder="name@example.com"
+                            />
 
-                    <Select
-                    label="Role"
-                    options={roleOptions}
-                    />
+                            <Input
+                                label="Mobile Number *"
+                                type="tel"
+                                placeholder="e.g. 9876543210"
+                            />
 
-                    <Select
-                    label="Group"
-                    options={groupOptions}
-                    />
+                            <Select
+                                label="Cadre *"
+                                placeholder="Select Cadre"
+                                options={cadreOptions}
+                            />
 
-                    <Input
-                    label="Password"
-                    type="password"
-                    placeholder="Enter password"
-                    />
+                            <Select
+                                label="Group *"
+                                placeholder="Select Group"
+                                options={groupOptions}
+                            />
 
-                    <Input
-                    label="Confirm Password"
-                    type="password"
-                    placeholder="Confirm password"
-                    />
+                            <Select
+                                label="Role *"
+                                placeholder="Select Role"
+                                options={roleOptions}
+                            />
 
-                    </div>
+                            <Select
+                                label="Designation *"
+                                placeholder="Select Designation"
+                                options={designationOptions}
+                            />
 
-                    <div className="flex justify-end gap-4">
+                            <Select
+                                label="Internal Designation *"
+                                placeholder="Select Internal Designation"
+                                options={internalDesignationOptions}
+                            />
 
-                    <Button
-                    variant="secondary"
-                    onClick={() => setShowForm(false)}
-                    >
-                    Cancel
-                    </Button>
+                            <Select
+                                label="Status *"
+                                placeholder="Select Status"
+                                options={statusOptions}
+                            />
 
-                    <Button variant="success">
-                    Create User
-                    </Button>
+                            <Input
+                                label="Password *"
+                                type="password"
+                                placeholder="Enter password"
+                            />
 
-                    </div>
+                            <Input
+                                label="Confirm Password *"
+                                type="password"
+                                placeholder="Confirm password"
+                            />
+
+                        </div>
+
+                        <div className="flex justify-end gap-4">
+
+                            <Button
+                            variant="secondary"
+                            onClick={() => setShowForm(false)}
+                            >
+                            Cancel
+                            </Button>
+
+                            <Button variant="success">
+                            Create User
+                            </Button>
+
+                        </div>
 
                     </form>
 

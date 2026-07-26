@@ -1,5 +1,6 @@
 function Select({
   label,
+  placeholder,
   value,
   onChange,
   name,
@@ -33,7 +34,7 @@ function Select({
         "
       >
         <option value="">
-          Select {label}
+          {placeholder || `Select ${label}`}
         </option>
 
         {options.map((option) => (
