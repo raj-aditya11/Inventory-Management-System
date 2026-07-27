@@ -270,15 +270,11 @@ CREATE TABLE IF NOT EXISTS `inventory_management`.`disposal_requests` (
   `requested_by` INT NULL,
   `quantity` INT NULL,
   `reason` TEXT NULL,
-  `approved_by` INT NULL,
-  `approval_date` TIMESTAMP NULL,
-  `status` TINYINT DEFAULT 1,
   `remarks` TEXT NULL,
-  `requested_at` TIMESTAMP NULL,
+  `disposed_at` TIMESTAMP NULL,
   PRIMARY KEY (`disposal_request_id`),
   INDEX `fk_disposal_assignment_idx` (`assignment_id` ASC) VISIBLE,
   INDEX `fk_disposal_requests_users1_idx` (`requested_by` ASC) VISIBLE,
-  INDEX `fk_disposal_approved_by_idx` (`approved_by` ASC) VISIBLE,
   CONSTRAINT `fk_disposal_assignment`
     FOREIGN KEY (`assignment_id`)
     REFERENCES `inventory_management`.`asset_assignment` (`assignment_id`)
@@ -289,11 +285,6 @@ CREATE TABLE IF NOT EXISTS `inventory_management`.`disposal_requests` (
     REFERENCES `inventory_management`.`users` (`id`)
     ON DELETE RESTRICT
     ON UPDATE CASCADE,
-  CONSTRAINT `fk_disposal_approved_by`
-    FOREIGN KEY (`approved_by`)
-    REFERENCES `inventory_management`.`users` (`id`)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
