@@ -29,8 +29,12 @@ function TransferRequest() {
 
    const columns = [
         {
-            header: "Request ID",
-            accessor: "requestId",
+            header: "Sr. No.",
+            accessor: "srNo",
+        },
+        {
+            header: "Ledger No.",
+            accessor: "ledger",
         },
         {
             header: "Asset",
@@ -62,15 +66,6 @@ function TransferRequest() {
                 </span>
             );
             },
-        },
-        {
-            header: "Actions",
-            accessor: "requestId",
-            render: () => (
-            <Button size="sm">
-                Details
-            </Button>
-            ),
         },
     ];
     return(

@@ -160,6 +160,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `inventory_management`.`inventory` (
   `inventory_id` INT NOT NULL AUTO_INCREMENT,
   `asset_id` INT NULL,
+  'sr_no' INT NOT NULL,
   `ledger_number` VARCHAR(50) NULL,
   `quantity_received` INT NULL,
   `quantity_available` INT NULL,

@@ -51,16 +51,32 @@ function Users() {
 
     const columns = [
         {
-            header: "User ID",
-            accessor: "id",
-        },
-        {
             header: "Name",
             accessor: "name",
         },
         {
             header: "Email",
             accessor: "email",
+        },
+        {
+            header: "Mobile Number",
+            accessor: "mobile",
+        },
+        {
+            header: "Cadre",
+            accessor: "cadre",
+        },
+        {
+            header: "Designation",
+            accessor: "designation",
+        },
+        {
+            header: "Internal Designation",
+            accessor: "internalDesignation"
+        },
+        {
+            header: "Group",
+            accessor: "group",
         },
         {
             header: "Role",
@@ -84,10 +100,6 @@ function Users() {
             },
         },
         {
-            header: "Group",
-            accessor: "group",
-        },
-        {
             header: "Status",
             accessor: "status",
 
@@ -107,19 +119,7 @@ function Users() {
             );
             },
         },
-        {
-            header: "Actions",
-            accessor: "id",
-
-            render: () => (
-            <Button
-                size="sm"
-                variant="primary"
-            >
-                Edit
-            </Button>
-            ),
-        },
+        
     ];
     return(
         <div className="space-y-6">

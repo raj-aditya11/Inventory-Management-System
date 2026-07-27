@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { useNavigate } from "react-router-dom";
 
 import { FaPlus } from "react-icons/fa";
@@ -11,24 +13,46 @@ import Table from "../../components/common/Table";
 import { inventoryData } from "../../data/mockData";
 
 function Inventory() {
+    const [selectedRows, setSelectedRows] = useState([]);
+
     const navigate = useNavigate();
 
     const columns = [
+        {
+            header: "Sr. No.",
+            accessor: "srNo",
+        },
         {
             header: "Ledger No.",
             accessor: "ledger",
         },
         {
-            header: "Asset",
+            header: "Asset Name/Nomenclature",
             accessor: "asset",
         },
         {
-            header: "Category",
-            accessor: "category",
+            header: "Quantity/Unit",
+            accessor: "quantity",
         },
         {
-            header: "Quantity",
-            accessor: "quantity",
+            header: "Condition",
+            accessor: "condition",
+
+            render: (value) => {
+
+                const colors = {
+                Serviceable: "bg-green-100 text-green-700",
+                Unserviceable: "bg-red-100 text-red-700",
+                };
+
+                return (
+                <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${colors[value]}`}
+                >
+                    {value}
+                </span>
+                );
+            },
         },
         {
             header: "Status",
@@ -52,17 +76,8 @@ function Inventory() {
             },
         },
         {
-            header: "Actions",
-            accessor: "id",
-
-            render: () => (
-                <Button
-                size="sm"
-                variant="primary"
-                >
-                View
-                </Button>
-            ),
+            header: "Location",
+            accessor: "location",
         },
     ];
     return (
@@ -94,11 +109,61 @@ function Inventory() {
 
             </div>
 
+            {selectedRows.length > 0 && (
+                <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+
+                    <p className="font-medium text-blue-700">
+                        ✓ {selectedRows.length} Asset{selectedRows.length > 1 ? "s" : ""} Selected
+                    </p>
+
+                    <div className="flex gap-3">
+
+                        <Button
+                            onClick={() => {
+                                console.log("selectedRows:", selectedRows);
+
+                                const assets = inventoryData.filter(asset =>
+                                    selectedRows.includes(asset.id)
+                                );
+
+                                navigate("/inventory/transfers", {
+                                    state: {
+                                        selectedAssets: assets,
+                                    },
+                                });
+                            }}
+                        >
+                            Transfer Selected
+                        </Button>
+
+                        <Button
+                            variant="danger"
+                            onClick={() =>
+                                navigate("/inventory/disposals", {
+                                    state: {
+                                        selectedAssets: inventoryData.filter(asset =>
+                                            selectedRows.includes(asset.id)
+                                        ),
+                                    },
+                                })
+                            }
+                        >
+                            Dispose Selected
+                        </Button>
+
+                    </div>
+
+                </div>
+            )}
+
             {/* Table */}
             <div className="overflow-x-auto">
                 <Table
                     columns={columns}
                     data={inventoryData}
+                    selectable
+                    selectedRows={selectedRows}
+                    onSelectionChange={setSelectedRows}
                 />
             </div>
 

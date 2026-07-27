@@ -19,6 +19,7 @@ import ReceiveStock from "../pages/InventoryHolder/ReceiveStock";
 import AssignAssets from "../pages/InventoryHolder/AssignAssets";
 import Transfers from "../pages/InventoryHolder/Transfers";
 import Disposal from "../pages/InventoryHolder/Disposal";
+import GroupDisposals from "../pages/InventoryHolder/GroupDisposals";
 
 //Users
 import UserDashboard from "../pages/User/Dashboard";
@@ -100,6 +101,11 @@ function AppRoutes() {
                     <Route
                         path="/inventory/disposals"
                         element={<Disposal />}
+                    />
+
+                    <Route
+                        path="/inventory/group-disposals"
+                        element={<GroupDisposals />}
                     />
 
                 </Route>

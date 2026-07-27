@@ -42,6 +42,11 @@ export const inventoryHolderMenu = [
     path: "/inventory/disposals",
     icon: FaTrash,
   },
+  {
+    title: "Group Disposals",
+    path: "/inventory/group-disposals",
+    icon: FaTrash,
+  }
 ];
 
 export const userMenu = [

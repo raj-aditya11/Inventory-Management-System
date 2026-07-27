@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { FaPlus, FaSearch } from "react-icons/fa";
+import { useLocation } from "react-router-dom";
+
+import { FaSearch } from "react-icons/fa";
 
 import PageHeader from "../../components/common/PageHeader";
 import Input from "../../components/common/Input";
@@ -7,32 +9,75 @@ import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 import FormCard from "../../components/common/FormCard";
 import Table from "../../components/common/Table";
-import Textarea from "../../components/common/Textarea";
 
 import { disposalRequestsData } from "../../data/mockData";
 
 function DisposalRequest() {
-    const [showForm, setShowForm] = useState(false);
+    const location = useLocation();
 
-    const assetOptions = [
-        { value: "", label: "Select Asset" },
-        { value: "laptop", label: "Dell Latitude 5420" },
-        { value: "printer", label: "HP LaserJet Pro" },
-        { value: "monitor", label: "Dell Monitor" },
-    ];
+    const selectedAssets = location.state?.selectedAssets || [];
+
+    const [disposalQuantities, setDisposalQuantities] = useState({});
+    const [disposalReason, setDisposalReason] = useState("");
+    const [remarks, setRemarks] = useState("");
+
+    
 
     const reasonOptions = [
         { value: "", label: "Select Reason" },
-        { value: "damaged", label: "Damaged" },
-        { value: "obsolete", label: "Obsolete" },
-        { value: "hardware_failure", label: "Hardware Failure" },
-        { value: "other", label: "Other" },
+        { value: "Damaged", label: "Damaged" },
+        { value: "Obsolete", label: "Obsolete" },
+        { value: "Beyond Repair", label: "Beyond Repair" },
+        { value: "Lost", label: "Lost" },
     ];
 
-   const columns = [
+    const disposalFormColumns = [
         {
-            header: "Request ID",
-            accessor: "requestId",
+            header: "Sr. No.",
+            accessor: "srNo",
+        },
+        {
+            header: "Ledger No.",
+            accessor: "ledger",
+        },
+        {
+            header: "Asset Name/Nomenclature",
+            accessor: "name",
+        },
+        {
+            header: "Available Qty",
+            accessor: "quantity",
+        },
+        {
+            header: "Disposal Qty",
+            accessor: "quantity",
+
+            render: (value, row) => (
+                <Input
+                    type="number"
+                    min="1"
+                    max={value}
+                    value={disposalQuantities[row.id] || ""}
+                    placeholder="Qty"
+                    onChange={(e) =>
+                        setDisposalQuantities({
+                            ...disposalQuantities,
+                            [row.id]: Number(e.target.value),
+                        })
+                    }
+                />
+            ),
+        },
+    ];
+
+   const historyColumns = [
+        {
+            header: "Sr. No.",
+            accessor: "srNo",
+        },
+        {
+            header: "Ledger No.",
+            accessor: "ledger",
         },
         {
             header: "Asset",
@@ -65,84 +110,110 @@ function DisposalRequest() {
             );
             },
         },
-        {
-            header: "Actions",
-            accessor: "requestId",
-            render: () => (
-            <Button size="sm">
-                Details
-            </Button>
-            ),
-        },
     ];
+
+    const handleDisposalSubmit = () => {
+
+        if (!disposalReason) {
+            alert("Please select a disposal reason.");
+            return;
+        }
+
+        for (const asset of selectedAssets) {
+
+            const quantity = disposalQuantities[asset.id];
+
+            if (!quantity) {
+                alert(`Please enter disposal quantity for ${asset.name}.`);
+                return;
+            }
+
+            if (quantity < 1) {
+                alert(`Disposal quantity for ${asset.name} must be at least 1.`);
+                return;
+            }
+
+            if (quantity > asset.quantity) {
+                alert(
+                    `Disposal quantity for ${asset.name} cannot exceed available quantity.`
+                );
+                return;
+            }
+        }
+
+        console.log({
+            selectedAssets,
+            disposalQuantities,
+            disposalReason,
+            remarks,
+        });
+
+        alert("Disposal submitted successfully.");
+    };
+
     return(
         <div className="space-y-6">
             <PageHeader
-                title="Disposal Request"
-                subtitle="Manage your asset disposal requests."
+                title="Disposals"
+                subtitle="Dispose your assigned assets."
             />
 
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            {selectedAssets.length > 0 && (
+                <FormCard title="Dispose Selected Assets">
 
-                <div className="w-full md:max-w-md">
-                    <Input
-                        placeholder="Search requests..."
-                        icon={FaSearch}
+                    <Table
+                        columns={disposalFormColumns}
+                        data={selectedAssets}
                     />
-                </div>
 
-                <Button
-                    icon={!showForm ? FaPlus : null}
-                    onClick={() => setShowForm(!showForm)}
-                >
-                    {showForm ? "Close Form" : "New Request"}
-                </Button>
-            </div>
-
-            {showForm && (
-                <FormCard title="New Disposal Request">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 
                         <Select
-                            label="Asset"
-                            options={assetOptions}
+                            label="Disposal Reason *"
+                            options={reasonOptions}
+                            value={disposalReason}
+                            onChange={(e) => setDisposalReason(e.target.value)}
                         />
 
-                        <Select
-                            label="Reason"
-                            options={reasonOptions}
+                        <Input
+                            label="Remarks"
+                            value={remarks}
+                            onChange={(e) => setRemarks(e.target.value)}
                         />
 
                     </div>
 
-                    <Textarea
-                        label="Additional Remarks"
-                        placeholder="Enter any additional information..."
-                        className="mt-4"
-                    />
+                    <div className="flex justify-end mt-6">
 
-                    <div className="flex justify-end gap-3 mt-6">
-
-                        <Button
-                            variant="secondary"
-                            onClick={() => setShowForm(false)}
+                        <Button 
+                            variant="danger"
+                            onClick={handleDisposalSubmit}
                         >
-                            Cancel
-                        </Button>
-
-                        <Button>
-                            Request Disposal
+                            Submit Disposal
                         </Button>
 
                     </div>
 
                 </FormCard>
             )}
+
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+
+                <div className="w-full md:max-w-md">
+                    <Input
+                        placeholder="Search disposal history..."
+                        icon={FaSearch}
+                    />
+                </div>
+
+                
+            </div>
+
+            
             <div className="overflow-x-auto">
 
                 <Table
-                    columns={columns}
+                    columns={historyColumns}
                     data={disposalRequestsData}
                 />
 

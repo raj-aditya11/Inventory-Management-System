@@ -10,6 +10,7 @@ function Navbar({ role }) {
     "/inventory/assignments": "Assign Assets",
     "/inventory/transfers": "Transfers",
     "/inventory/disposals": "Disposals",
+    "/inventory/group-disposals": "Group Disposals",
 
     "/admin/dashboard": "Dashboard",
     "/admin/users": "Users",

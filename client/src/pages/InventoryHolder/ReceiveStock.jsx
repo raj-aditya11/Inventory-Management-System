@@ -4,7 +4,6 @@ import PageHeader from "../../components/common/PageHeader";
 import FormCard from "../../components/common/FormCard";
 import Input from "../../components/common/Input";
 import Textarea from "../../components/common/Textarea";
-import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 
 function ReceiveStock() {
@@ -22,26 +21,23 @@ function ReceiveStock() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <Input
-                    label="Asset Name"
-                    placeholder="Enter asset name"
-                />
-
-                <Select
-                    label="Category"
-                    options={[
-                        { value: "Laptop", label: "Laptop" },
-                        { value: "Printer", label: "Printer" },
-                        { value: "Networking", label: "Networking" },
-                        { value: "Scanner", label: "Scanner" },
-                        { value: "Desktop", label: "Desktop" },
-                    ]}
+                <Input 
+                    label="Sr. No."
+                    placeholder="Enter serial number"
                 />
 
                 <Input
                     label="Ledger Number"
                     placeholder="Enter ledger number"
                 />
+
+                <Input
+                    label="Asset Name/ Nomenclature"
+                    placeholder="Enter asset name"
+                />
+
+                
+                
 
                 <Input
                     label="Quantity"
