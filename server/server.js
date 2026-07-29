@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const groupRoutes = require("./routes/groupRoutes");
+
 require("dotenv").config();
 
 const db = require("./config/db");
@@ -12,6 +15,8 @@ const authMiddleware = require("./middlewares/authMiddleware");
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/groups", groupRoutes);
 
 app.get("/profile", authMiddleware, (req, res) => {
     const { id, username, role } = req.user;

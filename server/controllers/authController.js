@@ -16,8 +16,8 @@ exports.login = async (req, res) => {
 
         // Find user
         const [users] = await db.query(
-            "SELECT * FROM users WHERE user_name = ? AND is_deleted IS NULL",
-            [username]
+            "SELECT * FROM users WHERE user_name = ? AND is_deleted = ?",
+            [username, "no"]
         );
 
         if (users.length === 0) {

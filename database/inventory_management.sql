@@ -22,10 +22,11 @@ USE `inventory_management` ;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `inventory_management`.`groups` (
   `group_id` INT NOT NULL AUTO_INCREMENT,
-  `group_name` VARCHAR(100) NOT NULL,
+  `group_name` VARCHAR(100) NOT NULL UNIQUE,
   `description` TEXT NULL,
   `status` TINYINT DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `is_deleted` ENUM('yes','no') NOT NULL DEFAULT 'no',
   PRIMARY KEY (`group_id`))
 ENGINE = InnoDB;
 
@@ -82,17 +83,19 @@ CREATE TABLE IF NOT EXISTS `inventory_management`.`users` (
   `desig_id` INT NULL,
   `internal_desig_id` INT NULL,
   `role` ENUM('ADMIN', 'INVENTORY_HEAD', 'USER') NOT NULL,
-  `telephone_no` VARCHAR(11) NULL,
-  `user_name` VARCHAR(15) NOT NULL,
+  `telephone_no` VARCHAR(15) NULL,
+  `user_name` VARCHAR(30) NOT NULL,
   `password` VARCHAR(255) NOT NULL,
-  `status` TINYINT DEFAULT 1,
+  `status` TINYINT NOT NULL DEFAULT 1,
   `is_gazetted` ENUM('yes', 'no') NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `is_deleted` ENUM('yes', 'no') NULL,
-  `updated_at` TIMESTAMP NULL,
+  `is_deleted` ENUM('yes','no') NOT NULL DEFAULT 'no',
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `user_type` ENUM('permanent', 'temporary', 'generic') NULL,
   `group_id` INT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY unique_username (user_name),
+  UNIQUE KEY unique_email (email_id),
   INDEX `fk_users_groups_idx` (`group_id` ASC) VISIBLE,
   INDEX `fk_users_cadres_idx` (`cadre_id` ASC) VISIBLE,
   INDEX `fk_users_designations_idx` (`desig_id` ASC) VISIBLE,
