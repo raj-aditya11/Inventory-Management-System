@@ -141,19 +141,14 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `inventory_management`.`assets` (
   `asset_id` INT NOT NULL AUTO_INCREMENT,
-  `asset_name` VARCHAR(150) NULL,
-  `category_id` INT NULL,
-  `unit` VARCHAR(20) NULL,
+  `asset_name` VARCHAR(150) NOT NULL,
+  `unit` VARCHAR(20) NOT NULL,
   `description` TEXT NULL,
   `status` TINYINT DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `is_deleted` ENUM('yes','no') NOT NULL DEFAULT 'no',
   PRIMARY KEY (`asset_id`),
-  INDEX `fk_assets_categories_idx` (`category_id` ASC) VISIBLE,
-  CONSTRAINT `fk_assets_categories`
-    FOREIGN KEY (`category_id`)
-    REFERENCES `inventory_management`.`categories` (`category_id`)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE)
+  UNIQUE INDEX `uq_asset_name` (`asset_name` ASC) VISIBLE,
 ENGINE = InnoDB;
 
 
@@ -163,7 +158,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `inventory_management`.`inventory` (
   `inventory_id` INT NOT NULL AUTO_INCREMENT,
   `asset_id` INT NULL,
-  'sr_no' INT NOT NULL,
+  `sr_no` INT NOT NULL,
   `ledger_number` VARCHAR(50) NULL,
   `quantity_received` INT NULL,
   `quantity_available` INT NULL,
@@ -172,6 +167,7 @@ CREATE TABLE IF NOT EXISTS `inventory_management`.`inventory` (
   `received_by` INT NULL,
   `remarks` TEXT NULL,
   `status` TINYINT DEFAULT 1,
+  `is_deleted` ENUM('yes','no') NOT NULL DEFAULT 'no',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `quantity_disposed` INT NULL,
   PRIMARY KEY (`inventory_id`),
