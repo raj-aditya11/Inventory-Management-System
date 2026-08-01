@@ -4,6 +4,8 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const groupRoutes = require("./routes/groupRoutes");
 const assetRoutes = require("./routes/assetRoutes");
+const inventoryRoutes = require("./routes/inventoryRoutes");
+const assignmentRoutes = require("./routes/assignmentRoutes");
 
 require("dotenv").config();
 
@@ -19,6 +21,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/assets", assetRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/assignment", assignmentRoutes);
 
 app.get("/profile", authMiddleware, (req, res) => {
     const { id, username, role } = req.user;
