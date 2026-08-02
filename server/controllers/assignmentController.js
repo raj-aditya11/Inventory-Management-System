@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const {createNotification} = require("./notificationController");
 
 exports.createAssignment = async (req, res) => {
     let connection;
@@ -81,11 +82,14 @@ exports.createAssignment = async (req, res) => {
         const [inventory] = await connection.query(
             `
             SELECT
-                inventory_id,
-                quantity_available
-            FROM inventory
-            WHERE inventory_id = ?
-            AND is_deleted = ?
+                i.inventory_id,
+                i.quantity_available,
+                a.asset_name
+            FROM inventory i
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+            WHERE i.inventory_id = ?
+            AND i.is_deleted = ?
             `,
             [inventoryId, "no"]
         );
@@ -98,6 +102,7 @@ exports.createAssignment = async (req, res) => {
         }
 
         const availableQuantity = inventory[0].quantity_available;
+        const assetName = inventory[0].asset_name;
 
         if (assignedQuantity > availableQuantity) {
             return res.status(400).json({
@@ -190,6 +195,13 @@ exports.createAssignment = async (req, res) => {
                 message: "Inventory not found.",
             });
         }
+
+        await createNotification(
+            connection,
+            userId,
+            "Asset Assigned",
+            `You have been assigned ${assignedQuantity} ${assetName}(s).`
+        );
 
         await connection.commit();
 
