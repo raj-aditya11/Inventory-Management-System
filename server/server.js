@@ -6,6 +6,7 @@ const groupRoutes = require("./routes/groupRoutes");
 const assetRoutes = require("./routes/assetRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
 const assignmentRoutes = require("./routes/assignmentRoutes");
+const transferRoutes = require("./routes/transferRoutes");
 
 require("dotenv").config();
 
@@ -23,6 +24,7 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/assets", assetRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/assignment", assignmentRoutes);
+app.use("/api/transfer", transferRoutes);
 
 app.get("/profile", authMiddleware, (req, res) => {
     const { id, username, role } = req.user;

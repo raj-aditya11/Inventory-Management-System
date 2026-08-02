@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS `inventory_management`.`categories` (
   `category_name` VARCHAR(100) NULL,
   `description` TEXT NULL,
   `status` TINYINT DEFAULT 1,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
   PRIMARY KEY (`category_id`))
 ENGINE = InnoDB;
 
