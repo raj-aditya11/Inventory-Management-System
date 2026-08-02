@@ -140,6 +140,8 @@ exports.createTransferRequest = async (req, res) => {
             });
         }
 
+        const sameGroup = requester[0].group_id === destinationUser[0].group_id ? "yes": "no";
+
         // Prevent duplicate pending requests
         const [existingRequest] = await db.query(
             `
@@ -174,15 +176,17 @@ exports.createTransferRequest = async (req, res) => {
                 requested_by,
                 to_user,
                 quantity,
+                same_group_transfer,
                 reason
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             `,
             [
                 assignmentId,
                 requestedBy,
                 toUser,
                 transferQuantity,
+                sameGroup,
                 trimmedReason,
             ]
         );
@@ -191,8 +195,7 @@ exports.createTransferRequest = async (req, res) => {
             success: true,
             message: "Transfer request created successfully.",
             transferRequestId: result.insertId,
-            sameGroup:
-                requester[0].group_id === destinationUser[0].group_id,
+            sameGroup,
         });
 
     } catch (error) {
@@ -203,6 +206,1000 @@ exports.createTransferRequest = async (req, res) => {
             success: false,
             message: "Internal Server Error",
         });
+
+    }
+};
+
+exports.getAllTransferRequests = async (req, res) => {
+    try {
+
+        const [transferRequests] = await db.query(
+            `
+            SELECT
+                tr.transfer_request_id,
+                a.asset_name,
+                ru.user_name AS requested_by,
+                tu.user_name AS to_user,
+                tr.quantity,
+                tr.reason,
+                tr.source_holder_status,
+                tr.destination_holder_status,
+                tr.status,
+                tr.requested_at
+            FROM transfer_requests tr
+
+            INNER JOIN asset_assignment aa
+                ON tr.assignment_id = aa.assignment_id
+
+            INNER JOIN inventory i
+                ON aa.inventory_id = i.inventory_id
+
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+
+            INNER JOIN users ru
+                ON tr.requested_by = ru.id
+
+            INNER JOIN users tu
+                ON tr.to_user = tu.id
+
+            WHERE tr.is_deleted = ?
+
+            ORDER BY tr.requested_at DESC
+            `,
+            ["no"]
+        );
+
+        return res.status(200).json({
+            success: true,
+            count: transferRequests.length,
+            data: transferRequests,
+        });
+
+    } catch (error) {
+
+        console.error("Get All Transfer Requests Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+};
+
+exports.getTransferRequestById = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        const transferRequestId = Number(id);
+
+        // Validate ID
+        if (!Number.isInteger(transferRequestId) || transferRequestId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid transfer request ID.",
+            });
+        }
+
+        const [transferRequest] = await db.query(
+            `
+            SELECT
+                tr.transfer_request_id,
+                a.asset_name,
+                ru.user_name AS requested_by,
+                tu.user_name AS to_user,
+                tr.quantity,
+                tr.reason,
+                tr.source_holder_status,
+                tr.destination_holder_status,
+                tr.status,
+                tr.requested_at,
+                tr.source_approved_at,
+                tr.destination_approved_at,
+                tr.remarks
+
+            FROM transfer_requests tr
+
+            INNER JOIN asset_assignment aa
+                ON tr.assignment_id = aa.assignment_id
+
+            INNER JOIN inventory i
+                ON aa.inventory_id = i.inventory_id
+
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+
+            INNER JOIN users ru
+                ON tr.requested_by = ru.id
+
+            INNER JOIN users tu
+                ON tr.to_user = tu.id
+
+            WHERE tr.transfer_request_id = ?
+            AND tr.is_deleted = ?
+            `,
+            [transferRequestId, "no"]
+        );
+
+        if (transferRequest.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Transfer request not found.",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: transferRequest[0],
+        });
+
+    } catch (error) {
+
+        console.error("Get Transfer Request By ID Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+};
+
+exports.approveTransferBySourceHolder = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        const transferRequestId = Number(id);
+
+        const approvedBy = req.user.id;
+
+        // Validate ID
+        if (!Number.isInteger(transferRequestId) || transferRequestId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid transfer request ID.",
+            });
+        }
+
+        // Check transfer request exists
+        const [transferRequest] = await db.query(
+            `
+            SELECT
+                transfer_request_id,
+                source_holder_status,
+                destination_holder_status,
+                status,
+                same_group_transfer
+            FROM transfer_requests
+            WHERE transfer_request_id = ?
+            AND is_deleted = ?
+            `,
+            [transferRequestId, "no"]
+        );
+
+        if (transferRequest.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Transfer request not found.",
+            });
+        }
+
+        // Already rejected
+        if (transferRequest[0].status === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Transfer request has already been rejected.",
+            });
+        }
+
+        // Already completed
+        if (transferRequest[0].status === 2) {
+            return res.status(400).json({
+                success: false,
+                message: "Transfer request has already been completed.",
+            });
+        }
+
+        // Already approved by source holder
+        if (transferRequest[0].source_holder_status === 1) {
+            return res.status(400).json({
+                success: false,
+                message: "Source Inventory Holder has already approved this request.",
+            });
+        }
+
+        // Same group transfer
+        if (transferRequest[0].same_group_transfer === "yes") {
+
+            await db.query(
+                `
+                UPDATE transfer_requests
+                SET
+                    source_holder_status = ?,
+                    destination_holder_status = ?,
+                    source_approved_at = NOW(),
+                    destination_approved_at = NOW()
+                WHERE transfer_request_id = ?
+                `,
+                [
+                    1,
+                    1,
+                    transferRequestId,
+                ]
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Transfer approved successfully.",
+            });
+
+        }
+
+        // Different group transfer
+        await db.query(
+            `
+            UPDATE transfer_requests
+            SET
+                source_holder_status = ?,
+                source_approved_at = NOW()
+            WHERE transfer_request_id = ?
+            `,
+            [
+                1,
+                transferRequestId,
+            ]
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Source Inventory Holder approved the transfer request.",
+        });
+
+    } catch (error) {
+
+        console.error("Approve Source Transfer Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+};
+
+exports.completeTransfer = async (req, res) => {
+    let connection;
+
+    try {
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+
+        const transferRequestId = Number(id);
+
+        const approvedBy = req.user.id;
+
+        // Validate ID
+        if (!Number.isInteger(transferRequestId) || transferRequestId <= 0) {
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Invalid transfer request ID.",
+            });
+        }
+
+        // Fetch transfer request
+        const [transferRequest] = await connection.query(
+            `
+            SELECT
+                transfer_request_id,
+                assignment_id,
+                requested_by,
+                to_user,
+                quantity,
+                status,
+                same_group_transfer,
+                source_holder_status,
+                destination_holder_status
+            FROM transfer_requests
+            WHERE transfer_request_id = ?
+            AND is_deleted = ?
+            FOR UPDATE
+            `,
+            [transferRequestId, "no"]
+        );
+
+        if (transferRequest.length === 0) {
+
+            await connection.rollback();
+
+            return res.status(404).json({
+                success: false,
+                message: "Transfer request not found.",
+            });
+
+        }
+
+        const transfer = transferRequest[0];
+
+
+        // Already rejected
+        if (transfer.status === 0) {
+
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Transfer request has already been rejected.",
+            });
+
+        }
+
+        // Already completed
+        if (transfer.status === 2) {
+
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Transfer request has already been completed.",
+            });
+
+        }
+
+        
+
+        // Source holder approval required
+        if (transfer.source_holder_status !== 1) {
+
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Source Inventory Holder approval is pending.",
+            });
+
+        }
+
+        // Different group transfer
+        if (
+            transfer.same_group_transfer === "no" &&
+            transfer.destination_holder_status === 1
+        ) {
+
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Destination Inventory Holder has already approved this transfer.",
+            });
+
+        }
+
+        // Fetch logged-in Inventory Holder's group
+        const [loggedInHolder] = await connection.query(
+            `
+            SELECT
+                id,
+                group_id
+            FROM users
+            WHERE id = ?
+            AND role = ?
+            AND is_deleted = ?
+            `,
+            [
+                approvedBy,
+                "INVENTORY_HOLDER",
+                "no",
+            ]
+        );
+
+        if (loggedInHolder.length === 0) {
+
+            await connection.rollback();
+
+            return res.status(403).json({
+                success: false,
+                message: "Inventory Holder not found.",
+            });
+
+        }
+
+        // Fetch destination user's group
+        const [destinationUser] = await connection.query(
+            `
+            SELECT
+                id,
+                group_id
+            FROM users
+            WHERE id = ?
+            AND is_deleted = ?
+            `,
+            [
+                transfer.to_user,
+                "no",
+            ]
+        );
+
+        if (destinationUser.length === 0) {
+
+            await connection.rollback();
+
+            return res.status(404).json({
+                success: false,
+                message: "Destination user not found.",
+            });
+
+        }
+
+        // Authorize the Inventory Holder
+
+        if (transfer.same_group_transfer === "yes") {
+
+            const [requester] = await connection.query(
+                `
+                SELECT group_id
+                FROM users
+                WHERE id = ?
+                `,
+                [transfer.requested_by]
+            );
+
+            if (
+                requester.length === 0 ||
+                requester[0].group_id !== loggedInHolder[0].group_id
+            ) {
+
+                await connection.rollback();
+
+                return res.status(403).json({
+                    success: false,
+                    message: "You are not authorized to complete this transfer.",
+                });
+
+            }
+
+        } else {
+
+            if (
+                destinationUser[0].group_id !==
+                loggedInHolder[0].group_id
+            ) {
+
+                await connection.rollback();
+
+                return res.status(403).json({
+                    success: false,
+                    message: "You are not authorized to complete this transfer.",
+                });
+
+            }
+
+        }
+
+        // Fetch sender assignment
+        const [assignment] = await connection.query(
+            `
+            SELECT
+                assignment_id,
+                inventory_id,
+                user_id,
+                quantity,
+                status,
+                is_deleted
+            FROM asset_assignment
+            WHERE assignment_id = ?
+            AND is_deleted = ?
+            FOR UPDATE
+            `,
+            [
+                transfer.assignment_id,
+                "no",
+            ]
+        );
+
+        if (assignment.length === 0) {
+
+            await connection.rollback();
+
+            return res.status(404).json({
+                success: false,
+                message: "Asset assignment not found.",
+            });
+
+        }
+
+        const senderAssignment = assignment[0];
+
+        if (senderAssignment.user_id !== transfer.requested_by) {
+
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Transfer request does not match the assignment owner.",
+            });
+
+        }
+
+        if (senderAssignment.quantity < transfer.quantity) {
+
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Insufficient assigned quantity to complete transfer.",
+            });
+
+        }
+
+        const remainingQuantity =
+        senderAssignment.quantity - transfer.quantity;
+
+        if (remainingQuantity > 0) {
+
+            await connection.query(
+                `
+                UPDATE asset_assignment
+                SET quantity = ?
+                WHERE assignment_id = ?
+                `,
+                [
+                    remainingQuantity,
+                    senderAssignment.assignment_id,
+                ]
+            );
+
+        }
+
+        else {
+
+            await connection.query(
+                `
+                UPDATE asset_assignment
+                SET
+                    quantity = 0,
+                    is_deleted = ?
+                WHERE assignment_id = ?
+                `,
+                [
+                    "yes",
+                    senderAssignment.assignment_id,
+                ]
+            );
+
+        }
+
+        // Check whether receiver already has this inventory
+        const [receiverAssignment] = await connection.query(
+            `
+            SELECT
+                assignment_id,
+                quantity
+            FROM asset_assignment
+            WHERE user_id = ?
+            AND inventory_id = ?
+            AND is_deleted = ?
+            FOR UPDATE
+            `,
+            [
+                transfer.to_user,
+                senderAssignment.inventory_id,
+                "no",
+            ]
+        );
+
+        if (receiverAssignment.length > 0) {
+
+            // Receiver already has this asset
+            await connection.query(
+                `
+                UPDATE asset_assignment
+                SET quantity = quantity + ?
+                WHERE assignment_id = ?
+                `,
+                [
+                    transfer.quantity,
+                    receiverAssignment[0].assignment_id,
+                ]
+            );
+
+        } else {
+
+            // Create a new assignment for the receiver
+            await connection.query(
+                `
+                INSERT INTO asset_assignment
+                (
+                    inventory_id,
+                    user_id,
+                    quantity,
+                    assigned_by,
+                    assigned_date,
+                    remarks,
+                    status
+                )
+                VALUES (?, ?, ?, ?, CURDATE(), ?, ?)
+                `,
+                [
+                    senderAssignment.inventory_id,
+                    transfer.to_user,
+                    transfer.quantity,
+                    approvedBy,
+                    "Transfer completed",
+                    1
+                ]
+            );
+
+        }
+
+        // Record asset history
+        await connection.query(
+            `
+            INSERT INTO asset_history
+            (
+                inventory_id,
+                performed_by,
+                action,
+                quantity,
+                reference_table,
+                reference_id,
+                remarks
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+                senderAssignment.inventory_id,
+                approvedBy,
+                "TRANSFERRED",
+                transfer.quantity,
+                "transfer_requests",
+                transfer.transfer_request_id,
+                "Asset transferred successfully"
+            ]
+        );
+
+        // Mark transfer as completed
+        if (transfer.same_group_transfer === "yes") {
+
+            // Destination approval was already recorded earlier.
+            await connection.query(
+                `
+                UPDATE transfer_requests
+                SET status = ?
+                WHERE transfer_request_id = ?
+                `,
+                [
+                    2,
+                    transfer.transfer_request_id,
+                ]
+            );
+
+        } else {
+
+            // Record destination approval and complete the transfer.
+            await connection.query(
+                `
+                UPDATE transfer_requests
+                SET
+                    destination_holder_status = ?,
+                    destination_approved_at = NOW(),
+                    status = ?
+                WHERE transfer_request_id = ?
+                `,
+                [
+                    1,
+                    2,
+                    transfer.transfer_request_id,
+                ]
+            );
+
+        }
+
+        await connection.commit();
+
+        return res.status(200).json({
+            success: true,
+            message: "Transfer completed successfully.",
+        });
+
+    } catch (error) {
+
+        if (connection) {
+            await connection.rollback();
+        }
+
+        console.error("Complete Transfer Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    } finally {
+
+        if (connection) {
+            connection.release();
+        }
+
+    }
+};
+
+exports.rejectTransferRequest = async (req, res) => {
+    let connection;
+
+    try {
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+
+        const transferRequestId = Number(id);
+
+        const approvedBy = req.user.id;
+
+        // Validate ID
+        if (!Number.isInteger(transferRequestId) || transferRequestId <= 0) {
+
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Invalid transfer request ID.",
+            });
+
+        }
+
+        // Fetch transfer request
+        const [transferRequest] = await connection.query(
+            `
+            SELECT
+                transfer_request_id,
+                assignment_id,
+                requested_by,
+                to_user,
+                quantity,
+                status,
+                same_group_transfer,
+                source_holder_status,
+                destination_holder_status
+            FROM transfer_requests
+            WHERE transfer_request_id = ?
+            AND is_deleted = ?
+            FOR UPDATE
+            `,
+            [transferRequestId, "no"]
+        );
+
+        if (transferRequest.length === 0) {
+
+            await connection.rollback();
+
+            return res.status(404).json({
+                success: false,
+                message: "Transfer request not found.",
+            });
+
+        }
+
+        const transfer = transferRequest[0];
+
+        // Already rejected
+        if (transfer.status === 0) {
+
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Transfer request has already been rejected.",
+            });
+
+        }
+
+        // Already completed
+        if (transfer.status === 2) {
+
+            await connection.rollback();
+
+            return res.status(400).json({
+                success: false,
+                message: "Transfer request has already been completed.",
+            });
+
+        }
+
+        // Fetch logged-in Inventory Holder
+        const [loggedInHolder] = await connection.query(
+            `
+            SELECT
+                id,
+                group_id
+            FROM users
+            WHERE id = ?
+            AND role = ?
+            AND is_deleted = ?
+            `,
+            [
+                approvedBy,
+                "INVENTORY_HOLDER",
+                "no",
+            ]
+        );
+
+        if (loggedInHolder.length === 0) {
+
+            await connection.rollback();
+
+            return res.status(403).json({
+                success: false,
+                message: "Inventory Holder not found.",
+            });
+
+        }
+
+        // Fetch destination user
+        const [destinationUser] = await connection.query(
+            `
+            SELECT
+                id,
+                group_id
+            FROM users
+            WHERE id = ?
+            AND is_deleted = ?
+            `,
+            [
+                transfer.to_user,
+                "no",
+            ]
+        );
+
+        if (destinationUser.length === 0) {
+
+            await connection.rollback();
+
+            return res.status(404).json({
+                success: false,
+                message: "Destination user not found.",
+            });
+
+        }
+
+        // Authorization
+        if (transfer.same_group_transfer === "yes") {
+
+            const [requester] = await connection.query(
+                `
+                SELECT group_id
+                FROM users
+                WHERE id = ?
+                `,
+                [transfer.requested_by]
+            );
+
+            if (
+                requester.length === 0 ||
+                requester[0].group_id !== loggedInHolder[0].group_id
+            ) {
+
+                await connection.rollback();
+
+                return res.status(403).json({
+                    success: false,
+                    message: "You are not authorized to reject this transfer.",
+                });
+
+            }
+
+        } else {
+
+            if (
+                destinationUser[0].group_id !==
+                loggedInHolder[0].group_id
+            ) {
+
+                await connection.rollback();
+
+                return res.status(403).json({
+                    success: false,
+                    message: "You are not authorized to reject this transfer.",
+                });
+
+            }
+
+        }
+
+        // Fetch inventory id for history
+        const [assignment] = await connection.query(
+            `
+            SELECT inventory_id
+            FROM asset_assignment
+            WHERE assignment_id = ?
+            `,
+            [transfer.assignment_id]
+        );
+
+        if (assignment.length === 0) {
+
+            await connection.rollback();
+
+            return res.status(404).json({
+                success: false,
+                message: "Assignment not found.",
+            });
+
+        }
+
+        // Reject transfer
+        await connection.query(
+            `
+            UPDATE transfer_requests
+            SET status = ?
+            WHERE transfer_request_id = ?
+            `,
+            [
+                0,
+                transfer.transfer_request_id,
+            ]
+        );
+
+        // Asset History
+        await connection.query(
+            `
+            INSERT INTO asset_history
+            (
+                inventory_id,
+                performed_by,
+                action,
+                quantity,
+                reference_table,
+                reference_id,
+                remarks
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+                assignment[0].inventory_id,
+                approvedBy,
+                "REJECTED",
+                transfer.quantity,
+                "transfer_requests",
+                transfer.transfer_request_id,
+                "Transfer request rejected",
+            ]
+        );
+
+        await connection.commit();
+
+        return res.status(200).json({
+            success: true,
+            message: "Transfer request rejected successfully.",
+        });
+
+    } catch (error) {
+
+        if (connection) {
+            await connection.rollback();
+        }
+
+        console.error("Reject Transfer Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    } finally {
+
+        if (connection) {
+            connection.release();
+        }
 
     }
 };
