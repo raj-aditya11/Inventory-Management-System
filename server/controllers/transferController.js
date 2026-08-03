@@ -1,5 +1,7 @@
 const db = require("../config/db");
 
+const { createNotification } = require("./notificationController");
+
 exports.createTransferRequest = async (req, res) => {
     try {
 
@@ -191,6 +193,42 @@ exports.createTransferRequest = async (req, res) => {
             ]
         );
 
+        // Find Source Inventory Holder
+        const [holder] = await db.query(
+            `
+            SELECT id
+            FROM users
+            WHERE
+                role = 'INVENTORY_HOLDER'
+                AND group_id = ?
+                AND is_deleted = 'no'
+            LIMIT 1
+            `,
+            [requester[0].group_id]
+        );
+
+        if (holder.length > 0) {
+
+            await db.query(
+                `
+                INSERT INTO notifications
+                (
+                    receiver_id,
+                    title,
+                    message
+                )
+                VALUES (?, ?, ?)
+                `,
+                [
+                    holder[0].id,
+                    "Transfer Request",
+                    "A new transfer request requires your approval."
+                ]
+            );
+
+        }
+
+
         return res.status(201).json({
             success: true,
             message: "Transfer request created successfully.",
@@ -369,6 +407,7 @@ exports.approveTransferBySourceHolder = async (req, res) => {
             `
             SELECT
                 transfer_request_id,
+                requested_by,
                 source_holder_status,
                 destination_holder_status,
                 status,
@@ -431,6 +470,23 @@ exports.approveTransferBySourceHolder = async (req, res) => {
                 ]
             );
 
+            await db.query(
+                `
+                INSERT INTO notifications
+                (
+                    receiver_id,
+                    title,
+                    message
+                )
+                VALUES (?, ?, ?)
+                `,
+                [
+                    transferRequest[0].requested_by,
+                    "Transfer Approved",
+                    "Your transfer request has been approved and completed."
+                ]
+            );
+
             return res.status(200).json({
                 success: true,
                 message: "Transfer approved successfully.",
@@ -450,6 +506,23 @@ exports.approveTransferBySourceHolder = async (req, res) => {
             [
                 1,
                 transferRequestId,
+            ]
+        );
+
+        await db.query(
+            `
+            INSERT INTO notifications
+            (
+                receiver_id,
+                title,
+                message
+            )
+            VALUES (?, ?, ?)
+            `,
+            [
+                transferRequest[0].requested_by,
+                "Transfer Approved",
+                "Source Inventory Holder approved your request. Waiting for Destination Inventory Holder approval."
             ]
         );
 
@@ -902,6 +975,13 @@ exports.completeTransfer = async (req, res) => {
 
         }
 
+        await createNotification(
+            connection,
+            transfer.requested_by,
+            "Transfer Completed",
+            "Your transfer request has been completed successfully."
+        );
+
         await connection.commit();
 
         return res.status(200).json({
@@ -1173,6 +1253,13 @@ exports.rejectTransferRequest = async (req, res) => {
                 transfer.transfer_request_id,
                 "Transfer request rejected",
             ]
+        );
+
+        await createNotification(
+            connection,
+            transfer.requested_by,
+            "Transfer Rejected",
+            "Your transfer request has been rejected."
         );
 
         await connection.commit();

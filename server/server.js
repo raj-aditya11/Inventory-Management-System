@@ -25,9 +25,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/assets", assetRoutes);
 app.use("/api/inventory", inventoryRoutes);
-app.use("/api/assignment", assignmentRoutes);
-app.use("/api/transfer", transferRoutes);
-app.use("/api/disposal", disposalRoutes);
+app.use("/api/assignments", assignmentRoutes);
+app.use("/api/transfers", transferRoutes);
+app.use("/api/disposals", disposalRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 app.get("/profile", authMiddleware, (req, res) => {
