@@ -1,4 +1,4 @@
-import {BrowserRouter, Routes, Route} from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 
@@ -30,7 +30,6 @@ import Profile from "../pages/User/Profile";
 
 function AppRoutes() {
     return (
-        <BrowserRouter>
             <Routes>
 
                 {/*...Login...*/}
@@ -147,7 +146,6 @@ function AppRoutes() {
 
                 </Route>
             </Routes>
-        </BrowserRouter>
     );
 }
 
