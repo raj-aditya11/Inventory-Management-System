@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 
 import { FaSearch } from "react-icons/fa";
@@ -10,7 +12,6 @@ import Table from "../../components/common/Table";
 import FormCard from "../../components/common/FormCard";
 import Select from "../../components/common/Select";
 
-import { transferData } from "../../data/mockData";
 
 function Transfers() {
     const location = useLocation();
@@ -19,6 +20,9 @@ function Transfers() {
     const [transferQuantities, setTransferQuantities] = useState({});
     const [transferTo, setTransferTo] = useState("");
     const [remarks, setRemarks] = useState("");
+    const [users, setUsers] = useState([]);
+    const [transfers, setTransfers] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     const transferFormColumns = [
         {
@@ -59,20 +63,67 @@ function Transfers() {
         },
     ];
 
-    const userOptions = [
-        {
-            value: "Rahul Sharma",
-            label: "Rahul Sharma",
-        },
-        {
-            value: "Priya Singh",
-            label: "Priya Singh",
-        },
-        {
-            value: "Amit Kumar",
-            label: "Amit Kumar",
-        },
-    ];
+    const userOptions = users.map(user => ({
+        value: user.id,
+        label: `${user.first_name} ${user.last_name}`,
+    }));
+
+    useEffect(() => {
+
+        const loadData = async () => {
+
+            try {
+
+                const [usersResponse, transfersResponse] = await Promise.all([
+                    api.get("/users"),
+                    api.get("/transfers/pending"),
+                ]);
+
+                setUsers(
+                    usersResponse.data.data.filter(
+                        user => user.role === "USER"
+                    )
+                );
+
+                setTransfers(
+                    transfersResponse.data.data.map((transfer, index) => ({
+                        id: transfer.transfer_request_id,
+                        srNo: index + 1,
+                        ledger: transfer.ledger_number,
+                        asset: transfer.asset_name,
+                        from: transfer.requested_by,
+                        to: transfer.to_user,
+
+                        sameGroup: transfer.same_group_transfer,
+                        sourceStatus: transfer.source_holder_status,
+                        destinationStatus: transfer.destination_holder_status,
+
+                        status:
+                            transfer.status === 1
+                                ? "Pending"
+                                : transfer.status === 2
+                                ? "Approved"
+                                : "Rejected",
+
+                        requestedDate: new Date(
+                            transfer.requested_at
+                        ).toLocaleDateString(),
+                    }))
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                toast.error("Failed to load transfer data.");
+
+            }
+
+        };
+
+        loadData();
+
+    }, []);
 
     const columns = [
         {
@@ -117,50 +168,170 @@ function Transfers() {
             },
         },
         {
+            header: "Actions",
+
+            render: (_, row) => {
+
+                if (row.status !== "Pending") {
+                    return "-";
+                }
+
+                return (
+                    <div className="flex gap-2">
+
+                        <Button
+                            size="sm"
+                            variant="success"
+                            onClick={() => handleApprove(row)}
+                        >
+                            Approve
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleReject(row.id)}
+                        >
+                            Reject
+                        </Button>
+
+                    </div>
+                );
+            },
+        },
+        {
             header: "Requested Date",
             accessor: "requestedDate",
         },
     ];
 
-    const handleTransferSubmit = () => {
+    const handleApprove = async (row) => {
 
-        // User must be selected
+        try {
+
+            setLoading(true);
+
+            if (
+                row.sameGroup === "yes" ||
+                row.sourceStatus === 0
+            ) {
+
+                await api.put(`/transfers/source/${row.id}`);
+
+            } else {
+
+                await api.put(`/transfers/complete/${row.id}`);
+
+            }
+
+            toast.success("Transfer approved.");
+            window.location.reload();
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error(
+                error.response?.data?.message ||
+                "Approval failed."
+            );
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+    const handleReject = async (id) => {
+
+        try {
+
+            setLoading(true);
+
+            await api.put(`/transfers/reject/${id}`);
+
+            toast.success("Transfer rejected.");
+
+            window.location.reload();
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error(
+                error.response?.data?.message ||
+                "Rejection failed."
+            );
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+    const handleTransferSubmit = async () => {
+
         if (!transferTo) {
-            alert("Please select a user.");
+
+            toast.error("Please select a user.");
+
             return;
+
         }
 
-        // Every asset should have a quantity
-        for (const asset of selectedAssets) {
+        try {
 
-            const quantity = transferQuantities[asset.id];
+            setLoading(true);
 
-            if (!quantity) {
-                alert(`Please enter quantity for ${asset.asset}.`);
-                return;
+            for (const asset of selectedAssets) {
+
+                const quantity = transferQuantities[asset.id];
+
+                if (!quantity || quantity < 1) {
+
+                    toast.error(`Enter valid quantity for ${asset.name}.`);
+
+                    return;
+
+                }
+
+                await api.post("/transfers", {
+
+                    assignment_id: asset.assignment_id,
+
+                    to_user: Number(transferTo),
+
+                    quantity,
+
+                    reason: remarks,
+
+                });
+
             }
 
-            if (quantity < 1) {
-                alert(`Quantity for ${asset.asset} must be at least 1.`);
-                return;
-            }
+            toast.success("Transfer request submitted.");
 
-            if (quantity > asset.quantity) {
-                alert(
-                    `Transfer quantity for ${asset.asset} cannot exceed available quantity.`
-                );
-                return;
-            }
+            window.location.reload();
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error(
+                error.response?.data?.message ||
+                "Transfer request failed."
+            );
+
+        } finally {
+
+            setLoading(false);
+
         }
 
-        console.log({
-            selectedAssets,
-            transferQuantities,
-            transferTo,
-            remarks,
-        });
-
-        alert("Transfer request submitted successfully.");
     };
     return (
         <div className="space-y-6">
@@ -202,8 +373,9 @@ function Transfers() {
                         <Button
                             variant="success"
                             onClick={handleTransferSubmit}
+                            disabled={loading}
                         >
-                            Submit Transfer
+                            {loading ? "Submitting..." : "Submit Transfer"}
                         </Button>
 
                     </div>
@@ -225,7 +397,7 @@ function Transfers() {
 
                 <Table
                     columns={columns}
-                    data={transferData}
+                    data={transfers}
                 />
 
             </div>

@@ -4,6 +4,7 @@ const router = express.Router();
 const {
     disposeAsset,
     getDisposals,
+    getGroupDisposals,
     getDisposalById
 } = require("../controllers/disposalController");
 
@@ -22,6 +23,13 @@ router.get(
     authMiddleware,
     roleMiddleware("USER", "INVENTORY_HOLDER"),
     getDisposals
+);
+
+router.get(
+    "/group",
+    authMiddleware,
+    roleMiddleware("INVENTORY_HOLDER"),
+    getGroupDisposals
 );
 
 router.get(

@@ -8,6 +8,7 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 const {
     createUser,
     getAllUsers,
+    getMyProfile,
     getUserById,
     updateUser,
     deleteUser,
@@ -23,8 +24,15 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER","USER"),
     getAllUsers
+);
+
+router.get(
+    "/profile",
+    authMiddleware,
+    roleMiddleware("ADMIN", "INVENTORY_HOLDER", "USER"),
+    getMyProfile
 );
 
 router.get(

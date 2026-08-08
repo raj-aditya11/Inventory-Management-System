@@ -198,27 +198,77 @@ exports.createInventory = async (req, res) => {
 };
 
 exports.getAllInventory = async (req, res) => {
-    try {
-        const [inventory] = await db.query(`
-            SELECT
-                inventory_id,
-                asset_id,
-                sr_no,
-                ledger_number,
-                quantity_received,
-                quantity_available,
-                quantity_disposed,
-                purchase_cost,
-                purchase_date,
-                received_by,
-                remarks,
-                status,
-                created_at
-            FROM inventory
-            WHERE is_deleted = 'no'
-            ORDER BY created_at DESC
-        `);
+    const userId = req.user.id;
+    const role = req.user.role;
 
+    try {
+        let query = "";
+        let params = [];
+
+        if (role === "ADMIN") {
+
+            query = `
+                SELECT
+                    i.inventory_id,
+                    i.asset_id,
+                    a.asset_name,
+                    i.sr_no,
+                    i.ledger_number,
+                    i.quantity_received,
+                    i.quantity_available,
+                    i.quantity_disposed,
+                    i.purchase_cost,
+                    i.purchase_date,
+                    i.received_by,
+                    i.remarks,
+                    i.status,
+                    i.created_at
+                FROM inventory i
+                INNER JOIN assets a
+                    ON i.asset_id = a.asset_id
+                WHERE i.is_deleted = 'no'
+                ORDER BY i.created_at DESC
+            `;
+
+        } else if (role === "INVENTORY_HOLDER") {
+
+            query = `
+                SELECT
+                    i.inventory_id,
+                    i.asset_id,
+                    a.asset_name,
+                    i.sr_no,
+                    i.ledger_number,
+                    i.quantity_received,
+                    i.quantity_available,
+                    i.quantity_disposed,
+                    i.purchase_cost,
+                    i.purchase_date,
+                    i.received_by,
+                    i.remarks,
+                    i.status,
+                    i.created_at
+                FROM inventory i
+                INNER JOIN assets a
+                    ON i.asset_id = a.asset_id
+                WHERE
+                    i.received_by = ?
+                    AND i.is_deleted = 'no'
+                ORDER BY i.created_at DESC
+            `;
+
+            params = [userId];
+
+        } else {
+
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access."
+            });
+
+        }
+
+        const [inventory] = await db.query(query, params);
         return res.status(200).json({
             success: true,
             count: inventory.length,

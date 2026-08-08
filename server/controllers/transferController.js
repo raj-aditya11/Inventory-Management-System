@@ -169,6 +169,41 @@ exports.createTransferRequest = async (req, res) => {
             });
         }
 
+        const recipient = destinationUser[0];
+
+        if (
+            requester[0].group_id == null ||
+            recipient.group_id == null
+        ){
+
+            return res.status(400).json({
+                success: false,
+                message: "Both users must belong to a valid group.",
+            });
+
+        }
+
+        const [destinationHolder] = await db.query(
+            `
+            SELECT id
+            FROM users
+            WHERE
+                group_id = ?
+                AND role = 'INVENTORY_HOLDER'
+                AND is_deleted = 'no'
+            `,
+            [recipient.group_id]
+        );
+
+        if (destinationHolder.length === 0) {
+
+            return res.status(400).json({
+                success: false,
+                message: "The selected user's group does not have an active Inventory Holder.",
+            });
+
+        }
+
         // Insert request
         const [result] = await db.query(
             `
@@ -179,9 +214,12 @@ exports.createTransferRequest = async (req, res) => {
                 to_user,
                 quantity,
                 same_group_transfer,
+                source_holder_status,
+                destination_holder_status,
+                status,
                 reason
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `,
             [
                 assignmentId,
@@ -189,6 +227,11 @@ exports.createTransferRequest = async (req, res) => {
                 toUser,
                 transferQuantity,
                 sameGroup,
+
+                0,                                  // source holder pending
+                sameGroup === "yes" ? null : 0,     // destination holder pending only for cross-group
+                1,                                  // Pending
+
                 trimmedReason,
             ]
         );
@@ -249,12 +292,16 @@ exports.createTransferRequest = async (req, res) => {
 };
 
 exports.getAllTransferRequests = async (req, res) => {
+    const userId = req.user.id;
+    const role = req.user.role;
+
     try {
 
         const [transferRequests] = await db.query(
             `
             SELECT
                 tr.transfer_request_id,
+                i.ledger_number,
                 a.asset_name,
                 ru.user_name AS requested_by,
                 tu.user_name AS to_user,
@@ -304,6 +351,198 @@ exports.getAllTransferRequests = async (req, res) => {
         });
 
     }
+};
+
+exports.getMyTransferRequests = async (req, res) => {
+
+    try {
+
+        const userId = req.user.id;
+
+        const [requests] = await db.query(
+            `
+            SELECT
+                tr.transfer_request_id,
+                tr.assignment_id,
+                i.ledger_number,
+                a.asset_name,
+                tu.first_name,
+                tu.last_name,
+                tr.quantity,
+                tr.reason,
+                tr.status,
+                tr.requested_at
+
+            FROM transfer_requests tr
+
+            INNER JOIN asset_assignment aa
+                ON tr.assignment_id = aa.assignment_id
+
+            INNER JOIN inventory i
+                ON aa.inventory_id = i.inventory_id
+
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+
+            INNER JOIN users tu
+                ON tr.to_user = tu.id
+
+            WHERE tr.requested_by = ?
+            AND tr.is_deleted = 'no'
+
+            ORDER BY tr.requested_at DESC
+            `,
+            [userId]
+        );
+
+        return res.status(200).json({
+            success: true,
+            count: requests.length,
+            data: requests,
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+
+};
+
+exports.getPendingTransferRequests = async (req, res) => {
+
+    try {
+
+        const userId = req.user.id;
+
+        const [holder] = await db.query(
+            `
+            SELECT group_id
+            FROM users
+            WHERE
+                id = ?
+                AND role = 'INVENTORY_HOLDER'
+                AND is_deleted = 'no'
+            `,
+            [userId]
+        );
+
+        if (holder.length === 0) {
+
+            return res.status(403).json({
+                success: false,
+                message: "Inventory Holder not found.",
+            });
+
+        }
+
+        const groupId = holder[0].group_id;
+
+        const [requests] = await db.query(
+            `
+            SELECT
+                tr.transfer_request_id,
+                i.ledger_number,
+                a.asset_name,
+
+                CONCAT(
+                    ru.first_name,
+                    ' ',
+                    COALESCE(ru.last_name, '')
+                ) AS requested_by,
+
+                CONCAT(
+                    tu.first_name,
+                    ' ',
+                    COALESCE(tu.last_name, '')
+                ) AS to_user,
+
+                tr.quantity,
+                tr.reason,
+                tr.same_group_transfer,
+                tr.source_holder_status,
+                tr.destination_holder_status,
+                tr.status,
+                tr.requested_at
+
+            FROM transfer_requests tr
+
+            INNER JOIN asset_assignment aa
+                ON tr.assignment_id = aa.assignment_id
+
+            INNER JOIN inventory i
+                ON aa.inventory_id = i.inventory_id
+
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+
+            INNER JOIN users ru
+                ON tr.requested_by = ru.id
+
+            INNER JOIN users tu
+                ON tr.to_user = tu.id
+
+            WHERE
+            (
+                /* Same-group transfer */
+                (
+                    ru.group_id = ?
+                    AND tr.same_group_transfer = 'yes'
+                    AND tr.source_holder_status = 0
+                )
+
+                OR
+
+                /* Cross-group waiting for SOURCE holder */
+                (
+                    ru.group_id = ?
+                    AND tr.same_group_transfer = 'no'
+                    AND tr.source_holder_status = 0
+                )
+
+                OR
+
+                /* Cross-group waiting for DESTINATION holder */
+                (
+                    tu.group_id = ?
+                    AND tr.same_group_transfer = 'no'
+                    AND tr.source_holder_status = 1
+                    AND tr.destination_holder_status = 0
+                )
+            )
+            AND tr.is_deleted = 'no'
+
+            ORDER BY tr.requested_at DESC
+            `,
+            [
+                groupId,
+                groupId,
+                groupId,
+            ]
+        );
+
+        return res.status(200).json({
+            success: true,
+            count: requests.length,
+            data: requests,
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+
 };
 
 exports.getTransferRequestById = async (req, res) => {
@@ -386,6 +625,7 @@ exports.getTransferRequestById = async (req, res) => {
 };
 
 exports.approveTransferBySourceHolder = async (req, res) => {
+    console.log("Approve called");
     try {
 
         const { id } = req.params;
@@ -452,6 +692,7 @@ exports.approveTransferBySourceHolder = async (req, res) => {
 
         // Same group transfer
         if (transferRequest[0].same_group_transfer === "yes") {
+            console.log("Same group transfer");
 
             await db.query(
                 `
@@ -472,6 +713,17 @@ exports.approveTransferBySourceHolder = async (req, res) => {
 
             await db.query(
                 `
+                UPDATE transfer_requests
+                SET status = 2
+                WHERE transfer_request_id = ?
+                `,
+                [transferRequestId]
+            );
+            console.log("Updated holder status");
+
+
+            await db.query(
+                `
                 INSERT INTO notifications
                 (
                     receiver_id,
@@ -487,6 +739,7 @@ exports.approveTransferBySourceHolder = async (req, res) => {
                 ]
             );
 
+            console.log("Returning success");
             return res.status(200).json({
                 success: true,
                 message: "Transfer approved successfully.",
@@ -541,6 +794,14 @@ exports.approveTransferBySourceHolder = async (req, res) => {
         });
 
     }
+};
+
+const completeTransferInternal = async (
+    connection,
+    transferRequestId,
+    approvedBy
+) => {
+
 };
 
 exports.completeTransfer = async (req, res) => {
@@ -913,6 +1174,114 @@ exports.completeTransfer = async (req, res) => {
         }
 
         // Record asset history
+
+        //Source
+        await connection.query(
+            `
+            INSERT INTO asset_history
+            (
+                inventory_id,
+                performed_by,
+                action,
+                quantity,
+                reference_table,
+                reference_id,
+                remarks
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+                senderAssignment.inventory_id,
+                transfer.requested_by,
+                "TRANSFERRED",
+                transfer.quantity,
+                "transfer_requests",
+                transfer.transfer_request_id,
+                "Asset transferred successfully"
+            ]
+        );
+
+        //Destination
+        await connection.query(
+            `
+            INSERT INTO asset_history
+            (
+                inventory_id,
+                performed_by,
+                action,
+                quantity,
+                reference_table,
+                reference_id,
+                remarks
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+                senderAssignment.inventory_id,
+                transfer.to_user,
+                "RECEIVED",
+                transfer.quantity,
+                "transfer_requests",
+                transfer.transfer_request_id,
+                "Asset received through transfer"
+            ]
+        );
+
+        // Source Inventory Holder
+        if (transfer.same_group_transfer === "no") {
+
+            const [sourceHolder] = await connection.query(
+                `
+                SELECT id
+                FROM users
+                WHERE
+                    group_id = (
+                        SELECT group_id
+                        FROM users
+                        WHERE id = ?
+                    )
+                    AND role = 'INVENTORY_HOLDER'
+                    AND is_deleted = 'no'
+                LIMIT 1
+                `,
+                [transfer.requested_by]
+            );
+
+            if (
+                sourceHolder.length > 0 &&
+                sourceHolder[0].id !== approvedBy
+            ) {
+
+                await connection.query(
+                    `
+                    INSERT INTO asset_history
+                    (
+                        inventory_id,
+                        performed_by,
+                        action,
+                        quantity,
+                        reference_table,
+                        reference_id,
+                        remarks
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `,
+                    [
+                        senderAssignment.inventory_id,
+                        sourceHolder[0].id,
+                        "TRANSFERRED",
+                        transfer.quantity,
+                        "transfer_requests",
+                        transfer.transfer_request_id,
+                        "Transfer completed from group"
+                    ]
+                );
+
+            }
+
+        }
+
+        //IH
         await connection.query(
             `
             INSERT INTO asset_history
@@ -934,7 +1303,7 @@ exports.completeTransfer = async (req, res) => {
                 transfer.quantity,
                 "transfer_requests",
                 transfer.transfer_request_id,
-                "Asset transferred successfully"
+                "Transfer received into group"
             ]
         );
 

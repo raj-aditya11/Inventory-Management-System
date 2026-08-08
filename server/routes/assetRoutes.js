@@ -15,35 +15,35 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 router.post(
     "/",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     createAsset
 );
 
 router.get(
     "/",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     getAllAssets
 );
 
 router.get(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     getAssetById
 );
 
 router.put(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     updateAsset
 );
 
 router.delete(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     deleteAsset
 );
 

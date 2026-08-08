@@ -1,36 +1,25 @@
-import { FaBoxes, FaClipboardList, FaExchangeAlt, FaTrash } from "react-icons/fa";
+import { useState, useEffect } from "react";
+
+import { useAuth } from "../../context/AuthContext";
+
+import {
+    FaBoxes,
+    FaClipboardList,
+    FaExchangeAlt,
+    FaTrash,
+} from "react-icons/fa";
+
+import api from "../../services/api";
+import toast from "react-hot-toast";
 
 import Table from "../../components/common/Table";
 import PageHeader from "../../components/common/PageHeader";
 import StatCard from "../../components/common/StatCard";
 
 function Dashboard() {
-  const stats = [
-    {
-      title: "Total Assets",
-      value: 154,
-      icon: FaBoxes,
-      color: "bg-blue-600",
-    },
-    {
-      title: "Available Stock",
-      value: 72,
-      icon: FaClipboardList,
-      color: "bg-green-600",
-    },
-    {
-      title: "Pending Transfers",
-      value: 5,
-      icon: FaExchangeAlt,
-      color: "bg-yellow-500",
-    },
-    {
-      title: "Disposal Requests",
-      value: 2,
-      icon: FaTrash,
-      color: "bg-red-500",
-    },
-  ];
+  const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [activityData, setActivityData] = useState([]);
 
   const activityColumns = [
     { header: "Ledger No.", accessor: "ledger" },
@@ -40,46 +29,112 @@ function Dashboard() {
     { header: "Date", accessor: "date" },
   ];
 
-  const activityData = [
-    {
-      ledger: "L001",
-      asset: "Dell Laptop",
-      action: "Assigned",
-      quantity: 1,
-      date: "23 Jul 2026",
-    },
-    {
-      ledger: "L002",
-      asset: "HP Printer",
-      action: "Received",
-      quantity: 2,
-      date: "22 Jul 2026",
-    },
-    {
-      ledger: "L003",
-      asset: "Monitor",
-      action: "Transferred",
-      quantity: 1,
-      date: "21 Jul 2026",
-    },
-    {
-      ledger: "L004",
-      asset: "Scanner",
-      action: "Disposed",
-      quantity: 1,
-      date: "20 Jul 2026",
-    },
-  ];
+  useEffect(() => {
+
+      const loadDashboard = async () => {
+
+          try {
+
+              const response = await api.get(
+                  "/dashboard/inventory-holder"
+              );
+
+              setStats(response.data.stats);
+
+              setActivityData(
+                  response.data.recentActivity.map(item => ({
+
+                      ledger: item.ledger_number || "-",
+
+                      asset: item.asset_name || "-",
+
+                      action:
+                        item.action === "TRANSFERRED"
+                            ? "Asset Transferred"
+                            : item.action === "RECEIVED"
+                            ? "Asset Received"
+                            : item.action === "DISPOSED"
+                            ? "Asset Disposed"
+                            : item.action === "REJECTED"
+                            ? "Transfer Rejected"
+                            : item.action === "ASSIGNED"
+                            ? "Asset Assigned"
+                            : item.action,
+
+                      quantity: item.quantity,
+
+                      date: new Date(
+                          item.created_at
+                      ).toLocaleDateString(
+                          "en-GB",
+                          {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                          }
+                      ),
+
+                  }))
+              );
+
+          } catch (error) {
+
+              console.error(error);
+
+              toast.error(
+                  "Failed to load dashboard."
+              );
+
+          }
+
+      };
+
+      loadDashboard();
+
+  }, []);
+
+  const statCards = stats
+    ? [
+        {
+            title: "Total Assets",
+            value: stats.totalAssets,
+            icon: FaBoxes,
+            color: "bg-blue-600",
+        },
+        {
+            title: "Available Stock",
+            value: stats.availableStock,
+            icon: FaClipboardList,
+            color: "bg-green-600",
+        },
+        {
+            title: "Pending Transfers",
+            value: stats.pendingTransfers,
+            icon: FaExchangeAlt,
+            color: "bg-yellow-500",
+        },
+        {
+            title: "Disposals",
+            value: stats.disposals,
+            icon: FaTrash,
+            color: "bg-red-500",
+        },
+    ]
+    : [];
+
   return (
     <div>
 
       <PageHeader
         title="Inventory Holder Dashboard"
-        subtitle="Welcome back, Aditya Raj"
+        subtitle={`Welcome back, ${
+            `${user?.first_name || ""} ${user?.last_name || ""}`.trim()
+            || "Inventory Holder"
+        }`}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {stats.map((stat) => (
+        {statCards.map((stat) => (
           <StatCard
             key={stat.title}
             title={stat.title}

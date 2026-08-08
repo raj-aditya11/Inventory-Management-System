@@ -15,35 +15,35 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 router.post(
     "/",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     createInventory
 );
 
 router.get(
     "/",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     getAllInventory
 );
 
 router.get(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     getInventoryById
 );
 
 router.put(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     updateInventory
 );
 
 router.delete(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     deleteInventory
 )
 

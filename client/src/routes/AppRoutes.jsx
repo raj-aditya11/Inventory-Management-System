@@ -7,6 +7,9 @@ import {inventoryHolderMenu, adminMenu, userMenu} from "../data/navigation";
 //Login
 import Login from "../pages/Auth/Login";
 
+//Profile
+import Profile from "../pages/common/Profile";
+
 //Admin
 import AdminDashboard from "../pages/Admin/Dashboard";
 import Users from "../pages/Admin/Users";
@@ -15,6 +18,7 @@ import Groups from "../pages/Admin/Groups";
 //Inventory Holder
 import InventoryDashboard from "../pages/InventoryHolder/Dashboard";
 import Inventory from "../pages/InventoryHolder/Inventory";
+import MyAssetsInv from "../pages/InventoryHolder/MyAssetsInv";
 import ReceiveStock from "../pages/InventoryHolder/ReceiveStock";
 import AssignAssets from "../pages/InventoryHolder/AssignAssets";
 import Transfers from "../pages/InventoryHolder/Transfers";
@@ -26,7 +30,6 @@ import UserDashboard from "../pages/User/Dashboard";
 import MyAssets from "../pages/User/MyAssets";
 import TransferRequests from "../pages/User/TransferRequest";
 import DisposalRequest from "../pages/User/DisposalRequest";
-import Profile from "../pages/User/Profile";
 
 function AppRoutes() {
     return (
@@ -60,6 +63,11 @@ function AppRoutes() {
                         element={<Groups />}
                     />
 
+                    <Route
+                        path="/admin/profile" 
+                        element={<Profile />} 
+                    />
+
                 </Route>
 
                 {/*...Inventory Holder...*/}
@@ -87,6 +95,11 @@ function AppRoutes() {
                         element={<ReceiveStock />}
                     />
 
+                    <Route 
+                        path="/inventory/my-assets"
+                        element={<MyAssetsInv />}
+                    />
+
                     <Route
                         path="/inventory/assignments"
                         element={<AssignAssets />}
@@ -105,6 +118,11 @@ function AppRoutes() {
                     <Route
                         path="/inventory/group-disposals"
                         element={<GroupDisposals />}
+                    />
+
+                    <Route 
+                        path="/inventory/profile" 
+                        element={<Profile />} 
                     />
 
                 </Route>
@@ -139,9 +157,9 @@ function AppRoutes() {
                         element={<DisposalRequest />}
                     />
 
-                    <Route
-                        path="/user/profile"
-                        element={<Profile />}
+                    <Route 
+                        path="/user/profile" 
+                        element={<Profile />} 
                     />
 
                 </Route>

@@ -9,8 +9,10 @@ exports.disposeAsset = async (req, res) => {
         await connection.beginTransaction();
 
         const { assignment_id, quantity, reason, remarks } = req.body;
+        console.log("Request body:", req.body);
 
         const disposedBy = req.user.id;
+        
 
         // Validate input
         if (
@@ -48,6 +50,7 @@ exports.disposeAsset = async (req, res) => {
                 "no",
             ]
         );
+        console.log("Fetched assignment:", assignment);
 
         if (assignment.length === 0) {
 
@@ -60,7 +63,15 @@ exports.disposeAsset = async (req, res) => {
 
         }
 
+
         const currentAssignment = assignment[0];
+
+        console.log("req.user:", req.user);
+        console.log("disposedBy:", disposedBy);
+        console.log("assignment user:", currentAssignment.user_id);
+        console.log("equal?", currentAssignment.user_id === disposedBy);
+        console.log("typeof disposedBy:", typeof disposedBy);
+        console.log("typeof assignment user:", typeof currentAssignment.user_id);
 
         // Authorization
         if (currentAssignment.user_id !== disposedBy) {
@@ -264,76 +275,52 @@ exports.getDisposals = async (req, res) => {
         const userId = req.user.id;
         const role = req.user.role;
 
-        let query = "";
-        let params = [];
+        const query = `
+            SELECT
+                ad.disposal_id,
+                ad.assignment_id,
+                ad.disposed_by,
 
-        if (role === "USER") {
+                CONCAT_WS(
+                    ' ',
+                    u.first_name,
+                    u.middle_name,
+                    u.last_name
+                ) AS disposed_by_name,
 
-            query = `
-                SELECT
-                    ad.disposal_id,
-                    ad.assignment_id,
-                    ad.disposed_by,
-                    CONCAT(u.first_name, ' ', u.last_name) AS disposed_by_name,
-                    ad.quantity,
-                    ad.reason,
-                    ad.remarks,
-                    ad.disposed_at,
-                    aa.inventory_id,
-                    a.asset_name
-                FROM asset_disposal ad
-                INNER JOIN asset_assignment aa
-                    ON ad.assignment_id = aa.assignment_id
-                INNER JOIN inventory i
-                    ON aa.inventory_id = i.inventory_id
-                INNER JOIN assets a
-                    ON i.asset_id = a.asset_id
-                INNER JOIN users u
-                    ON ad.disposed_by = u.id
-                WHERE
-                    ad.disposed_by = ?
-                    AND ad.is_deleted = 'no'
-                ORDER BY ad.disposed_at DESC
-            `;
+                ad.quantity,
+                ad.reason,
+                ad.remarks,
+                ad.disposed_at,
 
-            params = [userId];
+                aa.inventory_id,
 
-        } else if (role === "INVENTORY_HOLDER") {
+                i.ledger_number,
 
-            query = `
-                SELECT
-                    ad.disposal_id,
-                    ad.assignment_id,
-                    ad.disposed_by,
-                    CONCAT(u.first_name, ' ', u.last_name) AS disposed_by_name,
-                    ad.quantity,
-                    ad.reason,
-                    ad.remarks,
-                    ad.disposed_at,
-                    aa.inventory_id,
-                    a.asset_name
-                FROM asset_disposal ad
-                INNER JOIN asset_assignment aa
-                    ON ad.assignment_id = aa.assignment_id
-                INNER JOIN inventory i
-                    ON aa.inventory_id = i.inventory_id
-                INNER JOIN assets a
-                    ON i.asset_id = a.asset_id
-                INNER JOIN users u
-                    ON ad.disposed_by = u.id
-                WHERE
-                    ad.is_deleted = 'no'
-                ORDER BY ad.disposed_at DESC
-            `;
+                a.asset_name
 
-        } else {
+            FROM asset_disposal ad
 
-            return res.status(403).json({
-                success: false,
-                message: "Unauthorized access."
-            });
+            INNER JOIN asset_assignment aa
+                ON ad.assignment_id = aa.assignment_id
 
-        }
+            INNER JOIN inventory i
+                ON aa.inventory_id = i.inventory_id
+
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+
+            INNER JOIN users u
+                ON ad.disposed_by = u.id
+
+            WHERE
+                ad.disposed_by = ?
+                AND ad.is_deleted = 'no'
+
+            ORDER BY ad.disposed_at DESC
+        `;
+
+        const params = [userId];
 
         const [disposals] = await db.query(query, params);
 
@@ -350,6 +337,82 @@ exports.getDisposals = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Internal Server Error"
+        });
+
+    }
+
+};
+
+exports.getGroupDisposals = async (req, res) => {
+
+    try {
+
+        const userId = req.user.id;
+
+        const query = `
+            SELECT
+                ad.disposal_id,
+                ad.assignment_id,
+                ad.disposed_by,
+
+                CONCAT_WS(
+                    ' ',
+                    u.first_name,
+                    u.middle_name,
+                    u.last_name
+                ) AS disposed_by_name,
+
+                ad.quantity,
+                ad.reason,
+                ad.remarks,
+                ad.disposed_at,
+
+                aa.inventory_id,
+
+                i.ledger_number,
+
+                a.asset_name
+
+            FROM asset_disposal ad
+
+            INNER JOIN asset_assignment aa
+                ON ad.assignment_id = aa.assignment_id
+
+            INNER JOIN inventory i
+                ON aa.inventory_id = i.inventory_id
+
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+
+            INNER JOIN users u
+                ON ad.disposed_by = u.id
+
+            WHERE
+                ad.is_deleted = 'no'
+                AND u.group_id = (
+                    SELECT group_id
+                    FROM users
+                    WHERE id = ?
+                )
+
+            ORDER BY ad.disposed_at DESC
+        `;
+
+        const [disposals] = await db.query(query, [userId]);
+
+        return res.status(200).json({
+            success: true,
+            count: disposals.length,
+            disposals,
+        });
+
+    } catch (error) {
+
+        console.error("Get Group Disposals Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
         });
 
     }
@@ -386,7 +449,12 @@ exports.getDisposalById = async (req, res) => {
                     ad.disposal_id,
                     ad.assignment_id,
                     ad.disposed_by,
-                    CONCAT(u.first_name, ' ', u.last_name) AS disposed_by_name,
+                    CONCAT_WS(
+                        ' ',
+                        u.first_name,
+                        u.middle_name,
+                        u.last_name
+                    ) AS disposed_by_name,
                     ad.quantity,
                     ad.reason,
                     ad.remarks,
@@ -422,7 +490,12 @@ exports.getDisposalById = async (req, res) => {
                     ad.disposal_id,
                     ad.assignment_id,
                     ad.disposed_by,
-                    CONCAT(u.first_name, ' ', u.last_name) AS disposed_by_name,
+                    CONCAT_WS(
+                        ' ',
+                        u.first_name,
+                        u.middle_name,
+                        u.last_name
+                    ) AS disposed_by_name,
                     ad.quantity,
                     ad.reason,
                     ad.remarks,

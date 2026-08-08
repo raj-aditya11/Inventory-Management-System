@@ -9,6 +9,7 @@ import {
   FaSignOutAlt,
   FaUsers,
   FaLayerGroup,
+  FaBoxOpen,
 } from "react-icons/fa";
 
 export const inventoryHolderMenu = [
@@ -33,6 +34,11 @@ export const inventoryHolderMenu = [
     icon: FaUserCheck,
   },
   {
+    title: "My Assets",
+    path: "/inventory/my-assets",
+    icon: FaBoxOpen,
+  },
+  {
     title: "Transfers",
     path: "/inventory/transfers",
     icon: FaExchangeAlt,
@@ -46,6 +52,11 @@ export const inventoryHolderMenu = [
     title: "Group Disposals",
     path: "/inventory/group-disposals",
     icon: FaTrash,
+  },
+  {
+    title: "Profile",
+    path: "/inventory/profile",
+    icon: FaUser,
   }
 ];
 
@@ -66,7 +77,7 @@ export const userMenu = [
     icon: FaExchangeAlt,
   },
   {
-    title: "Disposal Request",
+    title: "Asset Disposal",
     path: "/user/disposals",
     icon: FaTrash,
   },
@@ -93,6 +104,11 @@ export const adminMenu = [
     path: "/admin/groups",
     icon: FaLayerGroup,
   },
+  {
+    title: "Profile",
+    path: "/admin/profile",
+    icon: FaUser,
+  }
 ];
 
 export const accountMenu = [

@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "../../services/api";
+import toast from "react-hot-toast";
+import { useAuth } from "../../context/AuthContext";
+
 import { FaPlus, FaSearch } from "react-icons/fa";
 
 import PageHeader from "../../components/common/PageHeader";
@@ -7,25 +11,85 @@ import Select from "../../components/common/Select";
 import Button from "../../components/common/Button";
 import FormCard from "../../components/common/FormCard";
 import Table from "../../components/common/Table";
-
-import { transferRequestsData } from "../../data/mockData";
+import Textarea from "../../components/common/Textarea";
 
 function TransferRequest() {
     const [showForm, setShowForm] = useState(false);
 
-    const assetOptions = [
-        { value: "", label: "Select Asset" },
-        { value: "laptop", label: "Dell Latitude 5420" },
-        { value: "printer", label: "HP LaserJet Pro" },
-        { value: "monitor", label: "Dell Monitor" },
-        ];
+    const { user } = useAuth();
 
-    const userOptions = [
-        { value: "", label: "Select User" },
-        { value: "rahul", label: "Rahul Sharma" },
-        { value: "priya", label: "Priya Singh" },
-        { value: "aman", label: "Aman Verma" },
-    ];
+    const [loading, setLoading] = useState(false);
+
+    const [myAssets, setMyAssets] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [requests, setRequests] = useState([]);
+
+    const [formData, setFormData] = useState({
+        assignment_id: "",
+        to_user: "",
+        quantity: "",
+        reason: "",
+    });
+
+    useEffect(() => {
+
+        const loadData = async () => {
+
+            try {
+
+                const [
+                    assetsResponse,
+                    usersResponse,
+                    transfersResponse,
+                ] = await Promise.all([
+                    api.get("/assignments/my-assets"),
+                    api.get("/users"),
+                    api.get("/transfers/my"),
+                ]);
+
+                setMyAssets(assetsResponse.data.data);
+
+                setUsers(
+                    usersResponse.data.data.filter(
+                        u =>
+                            u.role === "USER" &&
+                            u.id !== user.id
+                    )
+                );
+
+                setRequests(
+                    transfersResponse.data.data.map(request => ({
+                        srNo: request.transfer_request_id,
+                        ledger: request.ledger_number,
+                        asset: request.asset_name,
+                        transferTo:
+                            `${request.first_name} ${request.last_name}`,
+                        requestedDate:
+                            new Date(request.requested_at)
+                                .toLocaleDateString(),
+
+                        status:
+                            request.status === 1
+                                ? "Pending"
+                                : request.status === 2
+                                ? "Approved"
+                                : "Rejected",
+                    }))
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                toast.error("Failed to load transfer data.");
+
+            }
+
+        };
+
+        loadData();
+
+    }, [user.id]);
 
    const columns = [
         {
@@ -68,6 +132,54 @@ function TransferRequest() {
             },
         },
     ];
+
+    const handleChange = (e) => {
+
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        });
+
+    };
+
+    const handleSubmit = async (e) => {
+
+        e.preventDefault();
+
+        setLoading(true);
+
+        try {
+
+            await api.post("/transfers", {
+                assignment_id: Number(formData.assignment_id),
+                to_user: Number(formData.to_user),
+                quantity: Number(formData.quantity),
+                reason: formData.reason,
+            });
+
+            toast.success("Transfer request submitted.");
+
+            setShowForm(false);
+
+            window.location.reload();
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error(
+                error.response?.data?.message ||
+                "Transfer request failed."
+            );
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
     return(
         <div className="space-y-6">
             <PageHeader
@@ -95,39 +207,71 @@ function TransferRequest() {
             {showForm && (
                 <FormCard title="New Transfer Request">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 space-y-4">
+                    <form className="space-y-6" onSubmit={handleSubmit}>
 
-                        <Select
-                            label="Asset"
-                            options={assetOptions}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 space-y-4">
+
+                            <Select
+                                name="assignment_id"
+                                label="Asset"
+                                value={formData.assignment_id}
+                                onChange={handleChange}
+                                options={myAssets.map(asset => ({
+                                    value: asset.assignment_id,
+                                    label: `${asset.asset_name} (${asset.ledger_number})`,
+                                }))}
+                            />
+
+                            <Select
+                                name="to_user"
+                                label="Transfer To"
+                                value={formData.to_user}
+                                onChange={handleChange}
+                                options={users.map(user => ({
+                                    value: user.id,
+                                    label: `${user.first_name} ${user.last_name}`,
+                                }))}
+                            />
+
+                            <Input
+                                name="quantity"
+                                label="Quantity"
+                                type="number"
+                                value={formData.quantity}
+                                onChange={handleChange}
+                            />
+
+                        </div>
+
+                        <Textarea
+                            name="reason"
+                            label="Reason"
+                            value={formData.reason}
+                            onChange={handleChange}
                         />
 
-                        <Select
-                            label="Transfer To"
-                            options={userOptions}
-                        />
+                        <div className="flex justify-end gap-3 mt-6">
 
-                    </div>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => setShowForm(false)}
+                            >
+                                Cancel
+                            </Button>
 
-                    <Input
-                        label="Reason"
-                        placeholder="Reason for transfer"
-                    />
+                            <Button
+                                type="submit"
+                                disabled={loading}
+                            >
+                                {loading
+                                    ? "Submitting..."
+                                    : "Request Transfer"}
+                            </Button>
 
-                    <div className="flex justify-end gap-3 mt-6">
+                        </div>
 
-                        <Button
-                            variant="secondary"
-                            onClick={() => setShowForm(false)}
-                        >
-                            Cancel
-                        </Button>
-
-                        <Button>
-                            Request Transfer
-                        </Button>
-
-                    </div>
+                    </form>
 
                 </FormCard>
             )}
@@ -135,7 +279,7 @@ function TransferRequest() {
 
                 <Table
                     columns={columns}
-                    data={transferRequestsData}
+                    data={requests}
                 />
 
             </div>

@@ -127,33 +127,123 @@ exports.createUser = async (req, res) => {
 };
 
 exports.getAllUsers = async (req, res) => {
+    const userId = req.user.id;
+    const role = req.user.role;
     try {
-        const [users] = await db.query(`
-            SELECT
-                id,
-                first_name,
-                middle_name,
-                last_name,
-                gen,
-                dob,
-                mobile_no,
-                email_id,
-                cadre_id,
-                desig_id,
-                internal_desig_id,
-                role,
-                telephone_no,
-                user_name,
-                status,
-                is_gazetted,
-                created_at,
-                updated_at,
-                user_type,
-                group_id
-            FROM users
-            WHERE is_deleted = 'no'
-            ORDER BY created_at DESC
-        `);
+        let query = "";
+        let params = [];
+
+        if (role === "ADMIN") {
+
+            query = `
+                SELECT
+                    id,
+                    first_name,
+                    middle_name,
+                    last_name,
+                    gen,
+                    dob,
+                    mobile_no,
+                    email_id,
+                    cadre_id,
+                    desig_id,
+                    internal_desig_id,
+                    role,
+                    telephone_no,
+                    user_name,
+                    status,
+                    is_gazetted,
+                    created_at,
+                    updated_at,
+                    user_type,
+                    group_id
+                FROM users
+                WHERE is_deleted = 'no'
+                ORDER BY created_at DESC
+            `;
+
+        } else if (role === "INVENTORY_HOLDER") {
+
+            query = `
+                SELECT
+                    id,
+                    first_name,
+                    middle_name,
+                    last_name,
+                    gen,
+                    dob,
+                    mobile_no,
+                    email_id,
+                    cadre_id,
+                    desig_id,
+                    internal_desig_id,
+                    role,
+                    telephone_no,
+                    user_name,
+                    status,
+                    is_gazetted,
+                    created_at,
+                    updated_at,
+                    user_type,
+                    group_id
+                FROM users
+                WHERE
+                    group_id = (
+                        SELECT group_id
+                        FROM users
+                        WHERE id = ?
+                    )
+                    AND is_deleted = 'no'
+                ORDER BY created_at DESC
+            `;
+
+            params = [userId];
+
+        } else if (role === "USER") {
+
+            query = `
+                SELECT
+                    id,
+                    first_name,
+                    middle_name,
+                    last_name,
+                    gen,
+                    dob,
+                    mobile_no,
+                    email_id,
+                    cadre_id,
+                    desig_id,
+                    internal_desig_id,
+                    role,
+                    telephone_no,
+                    user_name,
+                    status,
+                    is_gazetted,
+                    created_at,
+                    updated_at,
+                    user_type,
+                    group_id
+                FROM users
+                WHERE
+                    role = 'USER'
+                    AND status = 1
+                    AND is_deleted = 'no'
+                    AND id <> ?
+                ORDER BY first_name
+            `;
+
+            params = [userId];
+
+        } else {
+
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access."
+            });
+
+        }
+
+        const [users] = await db.query(query, params);
 
         return res.status(200).json({
             success: true,
@@ -169,6 +259,81 @@ exports.getAllUsers = async (req, res) => {
             message: "Internal Server Error",
         });
     }
+};
+
+exports.getMyProfile = async (req, res) => {
+
+    try {
+
+        const userId = req.user.id;
+
+        const [users] = await db.query(
+            `
+            SELECT
+                u.id,
+                u.first_name,
+                u.middle_name,
+                u.last_name,
+                u.user_name,
+                u.email_id,
+                u.mobile_no,
+                u.role,
+                u.status,
+
+                g.group_name,
+
+                c.cadre_name,
+
+                d.designation_name,
+
+                id.designation_name AS internal_designation
+
+            FROM users u
+
+            LEFT JOIN \`groups\` g
+                ON u.group_id = g.group_id
+
+            LEFT JOIN cadres c
+                ON u.cadre_id = c.cadre_id
+
+            LEFT JOIN designations d
+                ON u.desig_id = d.desig_id
+
+            LEFT JOIN internal_designations id
+                ON u.internal_desig_id = id.internal_desig_id
+
+            WHERE
+                u.id = ?
+                AND u.is_deleted = 'no'
+            `,
+            [userId]
+        );
+
+        if (users.length === 0) {
+
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
+
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: users[0],
+        });
+
+    } catch (error) {
+
+        console.error("Get Profile Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+
 };
 
 exports.getUserById = async (req, res) => {

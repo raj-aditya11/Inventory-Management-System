@@ -1,13 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 import PageHeader from "../../components/common/PageHeader";
 import Input from "../../components/common/Input";
 import Table from "../../components/common/Table";
-import { groupDisposalsData } from "../../data/mockData";
 
 const GroupDisposals = () => {
     const [searchTerm, setSearchTerm] = useState("");
 
-    const filteredData = groupDisposalsData.filter((item) =>
+    const [disposals, setDisposals] = useState([]);
+
+    useEffect(() => {
+
+        const loadDisposals = async () => {
+
+            try {
+
+                const response = await api.get("/disposals/group");
+
+                setDisposals(
+                    response.data.disposals.map((item, index) => ({
+                        srNo: index + 1,
+
+                        ledger: item.ledger_number,
+
+                        user: item.disposed_by_name,
+
+                        asset: item.asset_name,
+
+                        quantity: item.quantity,
+
+                        reason: item.reason,
+
+                        disposedDate: new Date(
+                            item.disposed_at
+                        ).toLocaleDateString(),
+
+                        remarks: item.remarks || "-",
+                    }))
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                toast.error("Failed to load group disposals.");
+
+            }
+
+        };
+
+        loadDisposals();
+
+    }, []);
+
+    const filteredData = disposals.filter((item) =>
         Object.values(item)
             .join(" ")
             .toLowerCase()
@@ -15,6 +62,10 @@ const GroupDisposals = () => {
     );
 
     const columns = [
+        {
+            header: "Sr. No.",
+            accessor: "srNo",
+        },
         {
             header: "Ledger No",
             accessor: "ledger",
@@ -49,7 +100,7 @@ const GroupDisposals = () => {
         <div className="space-y-6">
             <PageHeader
                 title="Group Disposals"
-                subtitle="Review disposals submitted by users in your group."
+                subtitle="View all asset disposals made by members of your group."
             />
 
             <Input

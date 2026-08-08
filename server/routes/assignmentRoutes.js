@@ -4,6 +4,7 @@ const router = express.Router();
 const {
     createAssignment,
     getAllAssignments,
+    getMyAssignments,
     getAssignmentById,
     updateAssignment,
     deleteAssignment
@@ -15,36 +16,42 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 router.post(
     "/",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     createAssignment
 );
 
 router.get(
     "/",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     getAllAssignments
+);
+
+router.get(
+    "/my-assets",
+    authMiddleware,
+    getMyAssignments
 );
 
 router.get(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     getAssignmentById
 );
 
 router.put(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     updateAssignment
 );
 
 router.delete(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     deleteAssignment
-)
+);
 
 module.exports = router;

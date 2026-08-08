@@ -76,15 +76,34 @@ exports.createGroup = async (req, res) => {
 exports.getAllGroups = async (req, res) => {
     try {
         const [groups] = await db.query(`
-            SELECT
-                group_id,
-                group_name,
-                description,
-                status,
-                created_at
-            FROM \`groups\`
-            WHERE is_deleted = 'no'
-            ORDER BY created_at DESC
+           SELECT
+            g.group_id,
+            g.group_name,
+            g.description,
+            g.status,
+            g.created_at,
+            COUNT(u.id) AS members
+        FROM \`groups\` g
+
+        LEFT JOIN users u
+            ON g.group_id = u.group_id
+
+        WHERE
+            g.is_deleted = 'no'
+            AND (
+                u.is_deleted = 'no'
+                OR u.id IS NULL
+            )
+
+        GROUP BY
+            g.group_id,
+            g.group_name,
+            g.description,
+            g.status,
+            g.created_at
+
+        ORDER BY
+            g.created_at DESC;
         `);
 
         return res.status(200).json({

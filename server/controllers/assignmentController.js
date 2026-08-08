@@ -286,6 +286,57 @@ exports.getAllAssignments = async (req, res) => {
     }
 };
 
+exports.getMyAssignments = async (req, res) => {
+    try {
+
+        const userId = req.user.id;
+
+        const [assignments] = await db.query(
+            `
+            SELECT
+                aa.assignment_id,
+                aa.inventory_id,
+                i.sr_no,
+                i.ledger_number,
+                a.asset_name,
+                aa.quantity,
+                aa.assigned_date,
+                aa.remarks,
+                aa.status
+            FROM asset_assignment aa
+
+            INNER JOIN inventory i
+                ON aa.inventory_id = i.inventory_id
+
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+
+            WHERE aa.user_id = ?
+            AND aa.is_deleted = 'no'
+
+            ORDER BY aa.assigned_date DESC
+            `,
+            [userId]
+        );
+
+        return res.status(200).json({
+            success: true,
+            count: assignments.length,
+            data: assignments,
+        });
+
+    } catch (error) {
+
+        console.error("Get My Assignments Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+};
+
 exports.getAssignmentById = async (req, res) => {
     try {
 

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-
 import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 
-import { FaPlus } from "react-icons/fa";
 import { FaSearch } from "react-icons/fa";
 
 import PageHeader from "../../components/common/PageHeader";
@@ -10,51 +10,35 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Table from "../../components/common/Table";
 
-import api from "../../services/api";
-import toast from "react-hot-toast";
 
-function Inventory() {
+function MyAssetsInv() {
+
     const [selectedRows, setSelectedRows] = useState([]);
-
-    const [inventory, setInventory] = useState([]);
-
     const navigate = useNavigate();
+
+    const [assets, setAssets] = useState([]);
 
     useEffect(() => {
 
-        const loadInventory = async () => {
+        const loadAssets = async () => {
 
             try {
 
-                const response = await api.get("/inventory");
+                const response = await api.get("/assignments/my-assets");
 
-                setInventory(
-                    response.data.data.map((item, index) => ({
-                        ...item,
-
-                        id: item.inventory_id,
-
-                        srNo: index + 1,
-
+                setAssets(
+                    response.data.data.map(item => ({
+                        id: item.assignment_id,
+                        srNo: item.sr_no,
                         ledger: item.ledger_number,
-
-                        asset: item.asset_name,
-
-                        quantity: item.quantity_available,
-
-                        condition:
-                            item.asset_condition === 1
-                                ? "Serviceable"
-                                : "Unserviceable",
-
+                        name: item.asset_name,
+                        quantity: item.quantity,
+                        assignment_id: item.assignment_id,
+                        inventory_id: item.inventory_id,
                         status:
                             item.status === 1
-                                ? "Available"
-                                : item.status === 2
                                 ? "Assigned"
-                                : "Under Maintenance",
-
-                        location: item.location || "-",
+                                : "Inactive",
                     }))
                 );
 
@@ -62,13 +46,13 @@ function Inventory() {
 
                 console.error(error);
 
-                toast.error("Failed to load inventory.");
+                toast.error("Failed to load assets.");
 
             }
 
         };
 
-        loadInventory();
+        loadAssets();
 
     }, []);
 
@@ -83,7 +67,7 @@ function Inventory() {
         },
         {
             header: "Asset Name/Nomenclature",
-            accessor: "asset",
+            accessor: "name",
         },
         {
             header: "Quantity/Unit",
@@ -95,19 +79,18 @@ function Inventory() {
 
             render: (value) => {
 
-                const colors = {
-                Available: "bg-green-100 text-green-700",
-                Assigned: "bg-yellow-100 text-yellow-700",
-                "Under Maintenance": "bg-red-100 text-red-700",
-                };
+            const colors = {
+                Assigned: "bg-green-100 text-green-700",
+                Maintenance: "bg-yellow-100 text-yellow-700",
+            };
 
-                return (
+            return (
                 <span
                     className={`px-3 py-1 rounded-full text-xs font-semibold ${colors[value]}`}
                 >
                     {value}
                 </span>
-                );
+            );
             },
         },
     ];
@@ -115,30 +98,9 @@ function Inventory() {
         <div className="space-y-6">
 
             <PageHeader
-            title="Inventory"
-            subtitle="Manage all inventory items."
+            title="My Assets"
+            subtitle="View all assets assigned to you."
             />
-
-            {/* Search + Button */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-
-                <div className="w-full md:max-w-md">
-
-                    <Input
-                    placeholder="Search inventory..."
-                    icon={FaSearch}
-                    />
-
-                </div>
-
-                <Button
-                    icon={FaPlus}
-                    onClick={() => navigate("/inventory/receive-stock")}
-                >
-                    Receive New Stock
-                </Button>
-
-            </div>
 
             {selectedRows.length > 0 && (
                 <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
@@ -148,18 +110,17 @@ function Inventory() {
                     </p>
 
                     <div className="flex gap-3">
-
                         <Button
                             onClick={() => {
                                 console.log("selectedRows:", selectedRows);
 
-                                const assets = inventory.filter(asset =>
+                                const selectedAssets = assets.filter(asset =>
                                     selectedRows.includes(asset.id)
                                 );
 
                                 navigate("/inventory/transfers", {
                                     state: {
-                                        selectedAssets: assets,
+                                        selectedAssets,
                                     },
                                 });
                             }}
@@ -169,37 +130,55 @@ function Inventory() {
 
                         <Button
                             variant="danger"
-                            onClick={() =>
+                            onClick={() =>{
+                                const selectedAssets = assets.filter(asset =>
+                                    selectedRows.includes(asset.id)
+                                );
+
+                                console.log("Selected Assets:", selectedAssets);
+
                                 navigate("/inventory/disposals", {
                                     state: {
-                                        selectedAssets: inventory.filter(asset =>
+                                        selectedAssets: assets.filter(asset =>
                                             selectedRows.includes(asset.id)
                                         ),
                                     },
-                                })
-                            }
+                                });
+                            }}
                         >
                             Dispose Selected
                         </Button>
-
                     </div>
 
                 </div>
             )}
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-                <Table
-                    columns={columns}
-                    data={inventory}
-                    selectable
-                    selectedRows={selectedRows}
-                    onSelectionChange={setSelectedRows}
-                />
+            {/* Search + Button */}
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+
+                <div className="w-full md:max-w-md">
+
+                    <Input
+                    placeholder="Search assets..."
+                    icon={FaSearch}
+                    />
+
+                </div>
+
+
             </div>
+
+            {/* Table */}
+            <Table
+                columns={columns}
+                data={assets}
+                selectable
+                selectedRows={selectedRows}
+                onSelectionChange={setSelectedRows}
+            />
 
         </div>
     );
 }
 
-export default Inventory;
+export default MyAssetsInv;

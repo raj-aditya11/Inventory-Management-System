@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 
 import { FaSearch } from "react-icons/fa";
 
@@ -8,12 +10,49 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Table from "../../components/common/Table";
 
-import { myAssetsData } from "../../data/mockData";
 
 function MyAssets() {
 
     const [selectedRows, setSelectedRows] = useState([]);
     const navigate = useNavigate();
+
+    const [assets, setAssets] = useState([]);
+
+    useEffect(() => {
+
+        const loadAssets = async () => {
+
+            try {
+
+                const response = await api.get("/assignments/my-assets");
+
+                setAssets(
+                    response.data.data.map(item => ({
+                        id: item.assignment_id,
+                        srNo: item.sr_no,
+                        ledger: item.ledger_number,
+                        name: item.asset_name,
+                        quantity: item.quantity,
+                        status:
+                            item.status === 1
+                                ? "Assigned"
+                                : "Inactive",
+                    }))
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                toast.error("Failed to load assets.");
+
+            }
+
+        };
+
+        loadAssets();
+
+    }, []);
 
     const columns = [
         {
@@ -31,10 +70,6 @@ function MyAssets() {
         {
             header: "Quantity/Unit",
             accessor: "quantity",
-        },
-        {
-            header: "Condition",
-            accessor: "condition",
         },
         {
             header: "Status",
@@ -77,7 +112,7 @@ function MyAssets() {
                         onClick={() =>
                             navigate("/user/disposals", {
                                 state: {
-                                    selectedAssets: myAssetsData.filter(asset =>
+                                    selectedAssets: assets.filter(asset =>
                                         selectedRows.includes(asset.id)
                                     ),
                                 },
@@ -108,7 +143,7 @@ function MyAssets() {
             {/* Table */}
             <Table
                 columns={columns}
-                data={myAssetsData}
+                data={assets}
                 selectable
                 selectedRows={selectedRows}
                 onSelectionChange={setSelectedRows}

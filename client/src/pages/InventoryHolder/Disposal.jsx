@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 
 import { FaSearch } from "react-icons/fa";
@@ -10,16 +12,21 @@ import Table from "../../components/common/Table";
 import FormCard from "../../components/common/FormCard";
 import Select from "../../components/common/Select";
 
-import { disposalData } from "../../data/mockData";
+import { useNavigate } from "react-router-dom";
+
 
 function Disposal() {
     const location = useLocation();
+    const navigate = useNavigate(); 
 
     const selectedAssets = location.state?.selectedAssets || [];
+    console.log("Received selectedAssets:", selectedAssets);
 
     const [disposalQuantities, setDisposalQuantities] = useState({});
     const [disposalReason, setDisposalReason] = useState("");
     const [remarks, setRemarks] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [history, setHistory] = useState([]);
 
     const reasonOptions = [
         {
@@ -93,65 +100,94 @@ function Disposal() {
             accessor: "asset",
         },
         {
-            header: "Requested By",
-            accessor: "requestedBy",
+            header: "Quantity",
+            accessor: "quantity",
         },
         {
             header: "Reason",
             accessor: "reason",
         },
         {
-            header: "Status",
-            accessor: "status",
-
-            render: (value) => {
-
-            const colors = {
-                Pending: "bg-yellow-100 text-yellow-700",
-                Approved: "bg-green-100 text-green-700",
-                Rejected: "bg-red-100 text-red-700",
-            };
-
-            return (
-                <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${colors[value]}`}
-                >
-                {value}
-                </span>
-            );
-            },
+            header: "Disposed On",
+            accessor: "disposedDate",
         },
         {
-            header: "Requested Date",
-            accessor: "requestedDate",
+            header: "Remarks",
+            accessor: "remarks",
         },
     ];
 
-    const handleDisposalSubmit = () => {
+    useEffect(() => {
 
-        // Disposal reason must be selected
+        const loadHistory = async () => {
+
+            try {
+
+                const response = await api.get("/disposals");
+
+                setHistory(
+
+                    response.data.disposals.map((item, index) => ({
+
+                        srNo: index + 1,
+
+                        ledger: item.ledger_number,
+
+                        asset: item.asset_name,
+
+                        quantity: item.quantity,
+
+                        reason: item.reason,
+
+                        disposedDate:
+                            new Date(item.disposed_at)
+                                .toLocaleDateString(),
+
+                        remarks: item.remarks || "-",
+
+                    }))
+
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                toast.error("Failed to load disposal history.");
+
+            }
+
+        };
+
+        loadHistory();
+
+    }, []);
+
+    const handleDisposalSubmit = async () => {
+
         if (!disposalReason) {
-            alert("Please select a disposal reason.");
+            toast.error("Please select a disposal reason.");
             return;
         }
 
-        // Validate quantities
         for (const asset of selectedAssets) {
 
             const quantity = disposalQuantities[asset.id];
 
             if (!quantity) {
-                alert(`Please enter disposal quantity for ${asset.asset}.`);
+                toast.error(`Please enter disposal quantity for ${asset.asset}.`);
                 return;
             }
 
             if (quantity < 1) {
-                alert(`Disposal quantity for ${asset.asset} must be at least 1.`);
+                toast.error(
+                    `Disposal quantity for ${asset.asset} must be at least 1.`
+                );
                 return;
             }
 
             if (quantity > asset.quantity) {
-                alert(
+                toast.error(
                     `Disposal quantity for ${asset.asset} cannot exceed available quantity.`
                 );
                 return;
@@ -160,26 +196,58 @@ function Disposal() {
 
         if (
             !window.confirm(
-                "Are you sure you want to submit this disposal request?"
+                "Are you sure you want to dispose the selected asset(s)?"
             )
         ) {
             return;
         }
 
-        console.log({
-            selectedAssets,
-            disposalQuantities,
-            disposalReason,
-            remarks,
-        });
+        try {
 
-        alert("Disposal request submitted successfully.");
+            setLoading(true);
+            
+
+            for (const asset of selectedAssets) {
+                
+                await api.post("/disposals", {
+                    assignment_id: asset.id,
+                    quantity: disposalQuantities[asset.id],
+                    reason: disposalReason,
+                    remarks,
+                });
+
+            }
+
+            toast.success("Asset(s) disposed successfully.");
+
+            setDisposalQuantities({});
+            setDisposalReason("");
+            setRemarks("");
+
+            navigate("/inventory/my-assets");
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error(
+                error.response?.data?.message ||
+                "Failed to dispose asset."
+            );
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
     };
+
     return (
         <div className="space-y-6">
             <PageHeader
                 title="Disposals"
-                subtitle="Review and manage disposal requests."
+                subtitle="Dispose your assigned assets."
             />
 
             {selectedAssets.length > 0 && (
@@ -212,11 +280,12 @@ function Disposal() {
 
                     <div className="flex justify-end mt-6">
 
-                        <Button 
+                        <Button
                             variant="danger"
                             onClick={handleDisposalSubmit}
+                            disabled={loading}
                         >
-                            Submit Disposal Request
+                            {loading ? "Submitting..." : "Submit Disposal"}
                         </Button>
 
                     </div>
@@ -238,7 +307,7 @@ function Disposal() {
 
                 <Table
                     columns={columns}
-                    data={disposalData}
+                    data={history}
                 />
 
             </div>

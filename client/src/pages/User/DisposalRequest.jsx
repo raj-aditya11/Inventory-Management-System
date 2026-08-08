@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "../../services/api";
+import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 
 import { FaSearch } from "react-icons/fa";
@@ -10,16 +12,22 @@ import Button from "../../components/common/Button";
 import FormCard from "../../components/common/FormCard";
 import Table from "../../components/common/Table";
 
-import { disposalRequestsData } from "../../data/mockData";
+import { useNavigate } from "react-router-dom";
 
 function DisposalRequest() {
     const location = useLocation();
+
+    const navigate = useNavigate();
 
     const selectedAssets = location.state?.selectedAssets || [];
 
     const [disposalQuantities, setDisposalQuantities] = useState({});
     const [disposalReason, setDisposalReason] = useState("");
     const [remarks, setRemarks] = useState("");
+
+    const [loading, setLoading] = useState(false);
+
+    const [history, setHistory] = useState([]);
 
     
 
@@ -84,72 +92,117 @@ function DisposalRequest() {
             accessor: "asset",
         },
         {
+            header: "Quantity",
+            accessor: "quantity",
+        },
+        {
             header: "Reason",
-            accessor: "reason"
+            accessor: "reason",
         },
         {
-            header: "Requested Date",
-            accessor: "requestedDate",
-        },
-        {
-            header: "Status",
-            accessor: "status",
-            render: (value) => {
-            const colors = {
-                Pending: "bg-yellow-100 text-yellow-700",
-                Approved: "bg-green-100 text-green-700",
-                Rejected: "bg-red-100 text-red-700",
-            };
-
-            return (
-                <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${colors[value]}`}
-                >
-                {value}
-                </span>
-            );
-            },
+            header: "Disposed On",
+            accessor: "disposedOn",
         },
     ];
 
-    const handleDisposalSubmit = () => {
+    const handleDisposalSubmit = async () => {
 
         if (!disposalReason) {
-            alert("Please select a disposal reason.");
+
+            toast.error("Please select a disposal reason.");
+
             return;
+
         }
 
-        for (const asset of selectedAssets) {
+        try {
 
-            const quantity = disposalQuantities[asset.id];
+            setLoading(true);
 
-            if (!quantity) {
-                alert(`Please enter disposal quantity for ${asset.name}.`);
-                return;
+            for (const asset of selectedAssets) {
+
+                const quantity = disposalQuantities[asset.id];
+
+                if (!quantity) {
+
+                    toast.error(`Enter quantity for ${asset.name}`);
+
+                    return;
+
+                }
+
+                await api.post("/disposals", {
+
+                    assignment_id: asset.id,
+
+                    quantity,
+
+                    reason: disposalReason,
+
+                    remarks,
+
+                });
+
             }
 
-            if (quantity < 1) {
-                alert(`Disposal quantity for ${asset.name} must be at least 1.`);
-                return;
-            }
+            toast.success("Assets disposed successfully.");
 
-            if (quantity > asset.quantity) {
-                alert(
-                    `Disposal quantity for ${asset.name} cannot exceed available quantity.`
-                );
-                return;
-            }
+            navigate("/user/assets");
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error(
+
+                error.response?.data?.message ||
+
+                "Failed to dispose asset."
+
+            );
+
+        } finally {
+
+            setLoading(false);
+
         }
 
-        console.log({
-            selectedAssets,
-            disposalQuantities,
-            disposalReason,
-            remarks,
-        });
-
-        alert("Disposal submitted successfully.");
     };
+
+    useEffect(() => {
+
+        const loadHistory = async () => {
+
+            try {
+
+                const response = await api.get("/disposals");
+
+                setHistory(response.data.disposals.map((item, index) => ({
+                    srNo: index + 1,
+
+                    ledger: item.ledger_number,
+
+                    asset: item.asset_name,
+
+                    quantity: item.quantity,
+
+                    reason: item.reason,
+
+                    disposedOn: new Date(item.disposed_at).toLocaleDateString(),
+                }))
+            );
+
+            } catch (error) {
+
+                console.error(error);
+
+            }
+
+        };
+
+        loadHistory();
+
+    }, []);
 
     return(
         <div className="space-y-6">
@@ -185,11 +238,12 @@ function DisposalRequest() {
 
                     <div className="flex justify-end mt-6">
 
-                        <Button 
+                        <Button
                             variant="danger"
+                            disabled={loading}
                             onClick={handleDisposalSubmit}
                         >
-                            Submit Disposal
+                            {loading ? "Submitting..." : "Submit Disposal"}
                         </Button>
 
                     </div>
@@ -214,7 +268,7 @@ function DisposalRequest() {
 
                 <Table
                     columns={historyColumns}
-                    data={disposalRequestsData}
+                    data={history}
                 />
 
             </div>

@@ -4,6 +4,8 @@ const router = express.Router();
 const {
     createTransferRequest,
     getAllTransferRequests,
+    getMyTransferRequests,
+    getPendingTransferRequests,
     getTransferRequestById,
     approveTransferBySourceHolder,
     completeTransfer,
@@ -23,8 +25,21 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware("ADMIN","INVENTORY_HOLDER"),
     getAllTransferRequests
+);
+
+router.get(
+    "/my",
+    authMiddleware,
+    getMyTransferRequests
+);
+
+router.get(
+    "/pending",
+    authMiddleware,
+    roleMiddleware("INVENTORY_HOLDER"),
+    getPendingTransferRequests
 );
 
 router.get(

@@ -9,6 +9,10 @@ const assignmentRoutes = require("./routes/assignmentRoutes");
 const transferRoutes = require("./routes/transferRoutes");
 const disposalRoutes = require("./routes/disposalRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const cadreRoutes = require("./routes/cadreRoutes");
+const designationRoutes = require("./routes/designationRoutes");
+const internalDesignationRoutes = require("./routes/internalDesignationRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 require("dotenv").config();
 
@@ -29,6 +33,11 @@ app.use("/api/assignments", assignmentRoutes);
 app.use("/api/transfers", transferRoutes);
 app.use("/api/disposals", disposalRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/cadres", cadreRoutes);
+app.use("/api/designations", designationRoutes);
+app.use("/api/internal-designations", internalDesignationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+
 
 app.get("/profile", authMiddleware, (req, res) => {
     const { id, username, role } = req.user;
