@@ -6,6 +6,7 @@ function Select({
   name,
   options = [],
   required = false,
+  disabled = false,
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -21,6 +22,7 @@ function Select({
         value={value}
         onChange={onChange}
         required={required}
+        disabled={disabled}
         className="
           w-full
           px-4
@@ -31,6 +33,9 @@ function Select({
           focus:ring-2
           focus:ring-blue-500
           outline-none
+          disabled:bg-gray-100
+          disabled:text-gray-500
+          disabled:cursor-not-allowed
         "
       >
         <option value="">

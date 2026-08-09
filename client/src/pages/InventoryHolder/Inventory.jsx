@@ -29,12 +29,12 @@ function Inventory() {
                 const response = await api.get("/inventory");
 
                 setInventory(
-                    response.data.data.map((item, index) => ({
+                    response.data.data.map((item) => ({
                         ...item,
 
                         id: item.inventory_id,
 
-                        srNo: index + 1,
+                        srNo: item.sr_no,
 
                         ledger: item.ledger_number,
 

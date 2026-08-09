@@ -178,12 +178,10 @@ exports.disposeAsset = async (req, res) => {
             `
             UPDATE inventory
             SET
-                quantity_available = quantity_available - ?,
                 quantity_disposed = quantity_disposed + ?
             WHERE inventory_id = ?
             `,
             [
-                quantity,
                 quantity,
                 currentAssignment.inventory_id,
             ]

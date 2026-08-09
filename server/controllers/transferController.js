@@ -364,6 +364,7 @@ exports.getMyTransferRequests = async (req, res) => {
             SELECT
                 tr.transfer_request_id,
                 tr.assignment_id,
+                i.sr_no,
                 i.ledger_number,
                 a.asset_name,
                 tu.first_name,

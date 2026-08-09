@@ -151,4 +151,80 @@ exports.markNotificationAsRead = async (req, res) => {
 
 };
 
+exports.getUnreadNotificationCount = async (req, res) => {
+
+    try {
+
+        const receiverId = req.user.id;
+
+        const [result] = await db.query(
+            `
+            SELECT COUNT(*) AS unreadCount
+            FROM notifications
+            WHERE
+                receiver_id = ?
+                AND is_read = 0
+            `,
+            [receiverId]
+        );
+
+        return res.status(200).json({
+            success: true,
+            unreadCount: result[0].unreadCount,
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Get Unread Notification Count Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+
+};
+
+exports.markAllNotificationsAsRead = async (req, res) => {
+
+    try {
+
+        const receiverId = req.user.id;
+
+        await db.query(
+            `
+            UPDATE notifications
+            SET is_read = 1
+            WHERE
+                receiver_id = ?
+                AND is_read = 0
+            `,
+            [receiverId]
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "All notifications marked as read.",
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Mark All Notifications Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
+    }
+
+};
+
 module.exports.createNotification = createNotification;

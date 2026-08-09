@@ -10,10 +10,10 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Table from "../../components/common/Table";
 
-
 function MyAssets() {
 
     const [selectedRows, setSelectedRows] = useState([]);
+
     const navigate = useNavigate();
 
     const [assets, setAssets] = useState([]);
@@ -24,7 +24,9 @@ function MyAssets() {
 
             try {
 
-                const response = await api.get("/assignments/my-assets");
+                const response = await api.get(
+                    "/assignments/my-assets"
+                );
 
                 setAssets(
                     response.data.data.map(item => ({
@@ -44,7 +46,9 @@ function MyAssets() {
 
                 console.error(error);
 
-                toast.error("Failed to load assets.");
+                toast.error(
+                    "Failed to load assets."
+                );
 
             }
 
@@ -77,70 +81,128 @@ function MyAssets() {
 
             render: (value) => {
 
-            const colors = {
-                Assigned: "bg-green-100 text-green-700",
-                Maintenance: "bg-yellow-100 text-yellow-700",
-            };
+                const colors = {
+                    Assigned:
+                        "bg-green-100 text-green-700",
 
-            return (
-                <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${colors[value]}`}
-                >
-                    {value}
-                </span>
-            );
+                    Maintenance:
+                        "bg-yellow-100 text-yellow-700",
+                };
+
+                return (
+                    <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${colors[value]}`}
+                    >
+                        {value}
+                    </span>
+                );
+
             },
+
         },
     ];
+
+    const selectedAssets = assets.filter(asset =>
+        selectedRows.includes(asset.id)
+    );
+
+    const handleTransfer = () => {
+
+        if (selectedRows.length !== 1) {
+
+            toast.error(
+                "Please select exactly one asset to transfer."
+            );
+
+            return;
+
+        }
+
+        navigate("/user/transfer", {
+            state: {
+                selectedAssets,
+            },
+        });
+
+    };
+
+    const handleDisposal = () => {
+
+        if (selectedRows.length === 0) {
+            return;
+        }
+
+        navigate("/user/disposals", {
+            state: {
+                selectedAssets,
+            },
+        });
+
+    };
+
     return (
+
         <div className="space-y-6">
 
             <PageHeader
-            title="My Assets"
-            subtitle="View all assets assigned to you."
+                title="My Assets"
+                subtitle="View all assets assigned to you."
             />
 
             {selectedRows.length > 0 && (
-                <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
 
                     <p className="font-medium text-blue-700">
-                        ✓ {selectedRows.length} Asset{selectedRows.length > 1 ? "s" : ""} Selected
+
+                        ✓ {selectedRows.length} Asset
+                        {selectedRows.length > 1
+                            ? "s"
+                            : ""} Selected
+
                     </p>
 
-                    <Button
-                        variant="danger"
-                        onClick={() =>
-                            navigate("/user/disposals", {
-                                state: {
-                                    selectedAssets: assets.filter(asset =>
-                                        selectedRows.includes(asset.id)
-                                    ),
-                                },
-                            })
-                        }
-                    >
-                        Dispose Selected
-                    </Button>
+                    <div className="flex gap-3">
+
+                        <Button
+                            disabled={
+                                selectedRows.length !== 1
+                            }
+                            onClick={handleTransfer}
+                        >
+                            Transfer Selected
+                        </Button>
+
+                        <Button
+                            variant="danger"
+                            onClick={handleDisposal}
+                        >
+                            Dispose Selected
+                        </Button>
+
+                    </div>
 
                 </div>
+
             )}
 
-            {/* Search + Button */}
+            {/* Search */}
+
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
 
                 <div className="w-full md:max-w-md">
 
                     <Input
-                    placeholder="Search assets..."
-                    icon={FaSearch}
+                        placeholder="Search assets..."
+                        icon={FaSearch}
                     />
 
                 </div>
 
-
             </div>
 
             {/* Table */}
+
             <Table
                 columns={columns}
                 data={assets}
@@ -150,7 +212,9 @@ function MyAssets() {
             />
 
         </div>
+
     );
+
 }
 
 export default MyAssets;
