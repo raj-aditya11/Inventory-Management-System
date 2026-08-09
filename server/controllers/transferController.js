@@ -359,16 +359,22 @@ exports.getMyTransferRequests = async (req, res) => {
 
         const userId = req.user.id;
 
-        const [requests] = await db.query(
+       const [requests] = await db.query(
             `
             SELECT
                 tr.transfer_request_id,
                 tr.assignment_id,
-                i.sr_no,
                 i.ledger_number,
+                i.sr_no,
                 a.asset_name,
-                tu.first_name,
-                tu.last_name,
+
+                CONCAT_WS(
+                    ' ',
+                    tu.first_name,
+                    tu.middle_name,
+                    tu.last_name
+                ) AS transfer_to_name,
+
                 tr.quantity,
                 tr.reason,
                 tr.status,

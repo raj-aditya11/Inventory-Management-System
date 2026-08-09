@@ -22,6 +22,7 @@ function Transfers() {
     const [remarks, setRemarks] = useState("");
     const [users, setUsers] = useState([]);
     const [transfers, setTransfers] = useState([]);
+    const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
 
     const transferFormColumns = [
@@ -125,6 +126,46 @@ function Transfers() {
 
     }, []);
 
+    const filteredTransfers = transfers.filter((transfer) => {
+
+        const searchTerm = search.toLowerCase().trim();
+
+        if (!searchTerm) {
+            return true;
+        }
+
+        return (
+            String(transfer.srNo)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            String(transfer.ledger)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            transfer.asset
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            transfer.from
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            transfer.to
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            transfer.status
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            transfer.requestedDate
+                ?.toLowerCase()
+                .includes(searchTerm)
+        );
+
+    });
+
     const columns = [
         {
             header: "Sr. No.",
@@ -135,7 +176,7 @@ function Transfers() {
             accessor: "ledger",
         },
         {
-            header: "Asset",
+            header: "Asset Name/ Nomencalture",
             accessor: "asset",
         },
         {
@@ -389,6 +430,8 @@ function Transfers() {
                 <Input
                     placeholder="Search transfer requests..."
                     icon={FaSearch}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
                 />
 
             </div>
@@ -397,7 +440,7 @@ function Transfers() {
 
                 <Table
                     columns={columns}
-                    data={transfers}
+                    data={filteredTransfers}
                 />
 
             </div>

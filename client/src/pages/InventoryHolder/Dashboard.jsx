@@ -23,7 +23,7 @@ function Dashboard() {
 
   const activityColumns = [
     { header: "Ledger No.", accessor: "ledger" },
-    { header: "Asset", accessor: "asset" },
+    { header: "Asset Name/Nomenclature", accessor: "asset" },
     { header: "Action", accessor: "action" },
     { header: "Quantity", accessor: "quantity" },
     { header: "Date", accessor: "date" },

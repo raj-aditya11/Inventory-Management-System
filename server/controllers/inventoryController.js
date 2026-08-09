@@ -3,7 +3,7 @@ const db = require("../config/db");
 exports.createInventory = async (req, res) => {
     try {
         const {
-            asset_id,
+            asset_name,
             sr_no,
             ledger_number,
             quantity_received,
@@ -16,7 +16,7 @@ exports.createInventory = async (req, res) => {
 
         // Validate required fields
         if (
-            !asset_id ||
+            !asset_name ||
             !sr_no ||
             !ledger_number ||
             !quantity_received ||
@@ -30,8 +30,7 @@ exports.createInventory = async (req, res) => {
             });
         }
 
-        // Convert numeric values
-        const assetId = Number(asset_id);
+        // Convert numeric values   
         const serialNo = Number(sr_no);
         const quantityReceived = Number(quantity_received);
         const purchaseCost = Number(purchase_cost);
@@ -39,14 +38,16 @@ exports.createInventory = async (req, res) => {
         const numericStatus = Number(status);
 
         // Trim strings
+        const trimmedAssetName = asset_name.trim();
         const trimmedLedgerNumber = ledger_number.trim();
         const trimmedRemarks = remarks?.trim() || null;
 
-        // Validate IDs
-        if (!Number.isInteger(assetId) || assetId <= 0) {
+        // Validate
+
+        if (!trimmedAssetName) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid asset ID.",
+                message: "Asset name is required.",
             });
         }
 
@@ -92,22 +93,61 @@ exports.createInventory = async (req, res) => {
             });
         }
 
-        // Check asset exists
-        const [asset] = await db.query(
+        // Find existing asset
+        let assetId;
+
+        const [existingAsset] = await db.query(
             `
-            SELECT asset_id
+            SELECT
+                asset_id,
+                is_deleted
             FROM assets
-            WHERE asset_id = ?
-            AND is_deleted = ?
+            WHERE asset_name = ?
             `,
-            [assetId, "no"]
+            [trimmedAssetName]
         );
 
-        if (asset.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Asset not found.",
-            });
+        if (existingAsset.length > 0) {
+
+            assetId = existingAsset[0].asset_id;
+
+            // Reactivate soft-deleted asset
+            if (existingAsset[0].is_deleted === "yes") {
+
+                await db.query(
+                    `
+                    UPDATE assets
+                    SET
+                        is_deleted = 'no',
+                        status = 1
+                    WHERE asset_id = ?
+                    `,
+                    [assetId]
+                );
+
+            }
+
+        } else {
+
+            // Create new asset
+            const [newAsset] = await db.query(
+                `
+                INSERT INTO assets
+                (
+                    asset_name,
+                    unit,
+                    status
+                )
+                VALUES (?, ?, ?)
+                `,
+                [
+                    trimmedAssetName,
+                    "Nos.",
+                    1,
+                ]
+            );
+
+            assetId = newAsset.insertId;
         }
 
         // Check receiver exists

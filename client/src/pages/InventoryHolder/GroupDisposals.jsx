@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+
+import { FaSearch } from "react-icons/fa";
+
 import api from "../../services/api";
 import toast from "react-hot-toast";
 import PageHeader from "../../components/common/PageHeader";
@@ -75,7 +78,7 @@ const GroupDisposals = () => {
             accessor: "user",
         },
         {
-            header: "Asset",
+            header: "Asset Name/ Nomenclature",
             accessor: "asset",
         },
         {
@@ -105,6 +108,7 @@ const GroupDisposals = () => {
 
             <Input
                 placeholder="Search by User, Asset or Ledger Number..."
+                icon={FaSearch}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />

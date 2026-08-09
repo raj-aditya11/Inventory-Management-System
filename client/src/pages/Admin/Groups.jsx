@@ -16,6 +16,8 @@ function Groups() {
 
     const [groups, setGroups] = useState([]);
 
+    const [search, setSearch] = useState("");
+
     const [loading, setLoading] = useState(false);
 
     const [editingGroup, setEditingGroup] = useState(null);
@@ -56,6 +58,34 @@ function Groups() {
         loadGroups();
 
     }, []);
+
+    const filteredGroups = groups.filter((group) => {
+
+        const searchTerm = search.toLowerCase().trim();
+
+        if (!searchTerm) {
+            return true;
+        }
+
+        return (
+            String(group.id)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            group.name
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            group.description
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            String(group.members)
+                .toLowerCase()
+                .includes(searchTerm)
+        );
+
+    });
 
     const columns = [
         {
@@ -232,6 +262,8 @@ function Groups() {
                     <Input
                         placeholder="Search groups..."
                         icon={FaSearch}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
 
@@ -315,7 +347,7 @@ function Groups() {
 
                 <Table
                     columns={columns}
-                    data={groups}
+                    data={filteredGroups}
                 />
 
             </div>

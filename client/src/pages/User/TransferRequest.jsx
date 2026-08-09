@@ -33,6 +33,8 @@ function TransferRequest() {
     const [users, setUsers] = useState([]);
     const [requests, setRequests] = useState([]);
 
+    const [search, setSearch] = useState("")
+
     const [formData, setFormData] = useState({
         assignment_id: "",
         to_user: "",
@@ -93,7 +95,7 @@ function TransferRequest() {
                                 request.asset_name,
 
                             transferTo:
-                                `${request.first_name} ${request.last_name}`,
+                                request.transfer_to_name,
 
                             requestedDate:
                                 new Date(
@@ -159,6 +161,42 @@ function TransferRequest() {
 
     }, [location.state]);
 
+    const filteredRequests = requests.filter((request) => {
+
+        const searchTerm = search.toLowerCase().trim();
+
+        if (!searchTerm) {
+            return true;
+        }
+
+        return (
+            String(request.srNo)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            String(request.ledger)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            request.asset
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            request.transferTo
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            request.requestedDate
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            request.status
+                ?.toLowerCase()
+                .includes(searchTerm)
+        );
+
+    });
+
 
     const columns = [
 
@@ -173,7 +211,7 @@ function TransferRequest() {
         },
 
         {
-            header: "Asset",
+            header: "Asset Name/ Nomenclature",
             accessor: "asset",
         },
 
@@ -337,6 +375,8 @@ function TransferRequest() {
                     <Input
                         placeholder="Search requests..."
                         icon={FaSearch}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
 
                 </div>
@@ -514,7 +554,7 @@ function TransferRequest() {
 
                 <Table
                     columns={columns}
-                    data={requests}
+                    data={filteredRequests}
                 />
 
             </div>

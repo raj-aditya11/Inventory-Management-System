@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
 import toast from "react-hot-toast";
@@ -9,19 +9,16 @@ import FormCard from "../../components/common/FormCard";
 import Input from "../../components/common/Input";
 import Textarea from "../../components/common/Textarea";
 import Button from "../../components/common/Button";
-import Select from "../../components/common/Select";
 
 function ReceiveStock() {
     const navigate = useNavigate();
 
     const { user } = useAuth();
 
-    const [assets, setAssets] = useState([]);
-
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
-        asset_id: "",
+        asset_name: "",
         sr_no: "",
         ledger_number: "",
         quantity_received: "",
@@ -30,31 +27,6 @@ function ReceiveStock() {
         remarks: "",
         status: 1,
     });
-
-
-    useEffect(() => {
-
-        const loadAssets = async () => {
-
-            try {
-
-                const response = await api.get("/assets");
-
-                setAssets(response.data.data);
-
-            } catch (error) {
-
-                console.error(error);
-
-                toast.error("Failed to load assets.");
-
-            }
-
-        };
-
-        loadAssets();
-
-    }, []);
 
     const handleSubmit = async (e) => {
 
@@ -72,7 +44,7 @@ function ReceiveStock() {
             toast.success("Stock received successfully.");
 
             setFormData({
-                asset_id: "",
+                asset_name: "",
                 sr_no: "",
                 ledger_number: "",
                 quantity_received: "",
@@ -136,20 +108,17 @@ function ReceiveStock() {
                     }
                 />
 
-                <Select
-                    label="Asset"
-                    placeholder="Select Asset"
-                    value={formData.asset_id}
+                <Input
+                    label="Asset Name/ Nomenclature"
+                    placeholder="Enter asset name"
+                    value={formData.asset_name}
                     onChange={(e) =>
                         setFormData({
                             ...formData,
-                            asset_id: e.target.value,
+                            asset_name: e.target.value,
                         })
                     }
-                    options={assets.map(asset => ({
-                        value: asset.asset_id,
-                        label: asset.asset_name,
-                    }))}
+                    required
                 />
 
                 

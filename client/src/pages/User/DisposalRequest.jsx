@@ -29,6 +29,8 @@ function DisposalRequest() {
 
     const [history, setHistory] = useState([]);
 
+    const [search, setSearch] = useState("");
+
     
 
     const reasonOptions = [
@@ -88,7 +90,7 @@ function DisposalRequest() {
             accessor: "ledger",
         },
         {
-            header: "Asset",
+            header: "Asset Name/ Nomenclature",
             accessor: "asset",
         },
         {
@@ -177,8 +179,8 @@ function DisposalRequest() {
 
                 const response = await api.get("/disposals");
 
-                setHistory(response.data.disposals.map((item, index) => ({
-                    srNo: index + 1,
+                setHistory(response.data.disposals.map((item) => ({
+                    srNo: item.sr_no,
 
                     ledger: item.ledger_number,
 
@@ -203,6 +205,42 @@ function DisposalRequest() {
         loadHistory();
 
     }, []);
+
+    const filteredHistory = history.filter((item) => {
+
+        const searchTerm = search.toLowerCase().trim();
+
+        if (!searchTerm) {
+            return true;
+        }
+
+        return (
+            String(item.srNo)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            String(item.ledger)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            item.asset
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            String(item.quantity)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            item.reason
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            item.disposedOn
+                ?.toLowerCase()
+                .includes(searchTerm)
+        );
+
+    });
 
     return(
         <div className="space-y-6">
@@ -257,6 +295,8 @@ function DisposalRequest() {
                     <Input
                         placeholder="Search disposal history..."
                         icon={FaSearch}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
 
@@ -268,7 +308,7 @@ function DisposalRequest() {
 
                 <Table
                     columns={historyColumns}
-                    data={history}
+                    data={filteredHistory}
                 />
 
             </div>

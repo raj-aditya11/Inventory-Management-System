@@ -16,6 +16,7 @@ function Users() {
        
 
     const [users, setUsers] = useState([]);
+    const [search, setSearch] = useState("");
     const [groups, setGroups] = useState([]);
     const [cadres, setCadres] = useState([]);
     const [designations, setDesignations] = useState([]);
@@ -159,6 +160,28 @@ function Users() {
         loadData();
 
     }, []);
+
+    const filteredUsers = users.filter((user) => {
+
+        const searchTerm = search.toLowerCase().trim();
+
+        if (!searchTerm) {
+            return true;
+        }
+
+        return (
+            user.name?.toLowerCase().includes(searchTerm) ||
+            user.email?.toLowerCase().includes(searchTerm) ||
+            user.mobile?.toLowerCase().includes(searchTerm) ||
+            user.cadre?.toLowerCase().includes(searchTerm) ||
+            user.designation?.toLowerCase().includes(searchTerm) ||
+            user.internalDesignation?.toLowerCase().includes(searchTerm) ||
+            user.group?.toLowerCase().includes(searchTerm) ||
+            user.roleLabel?.toLowerCase().includes(searchTerm) ||
+            user.statusLabel?.toLowerCase().includes(searchTerm)
+        );
+
+    });
 
     const columns = [
         {
@@ -440,6 +463,8 @@ function Users() {
                     <Input
                         placeholder="Search users..."
                         icon={FaSearch}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
 
@@ -618,7 +643,7 @@ function Users() {
 
                 <Table
                     columns={columns}
-                    data={users}
+                    data={filteredUsers}
                 />
 
             </div>

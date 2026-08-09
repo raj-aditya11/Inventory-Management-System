@@ -18,6 +18,8 @@ function MyAssetsInv() {
 
     const [assets, setAssets] = useState([]);
 
+    const [search, setSearch] = useState("");
+    
     useEffect(() => {
 
         const loadAssets = async () => {
@@ -55,6 +57,38 @@ function MyAssetsInv() {
         loadAssets();
 
     }, []);
+
+    const filteredAssets = assets.filter((asset) => {
+
+        const searchTerm = search.toLowerCase().trim();
+
+        if (!searchTerm) {
+            return true;
+        }
+
+        return (
+            String(asset.srNo)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            String(asset.ledger)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            asset.name
+                ?.toLowerCase()
+                .includes(searchTerm) ||
+
+            String(asset.quantity)
+                .toLowerCase()
+                .includes(searchTerm) ||
+
+            asset.status
+                ?.toLowerCase()
+                .includes(searchTerm)
+        );
+
+    });
 
     const columns = [
         {
@@ -159,8 +193,10 @@ function MyAssetsInv() {
                 <div className="w-full md:max-w-md">
 
                     <Input
-                    placeholder="Search assets..."
-                    icon={FaSearch}
+                        placeholder="Search assets..."
+                        icon={FaSearch}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
 
                 </div>
@@ -171,7 +207,7 @@ function MyAssetsInv() {
             {/* Table */}
             <Table
                 columns={columns}
-                data={assets}
+                data={filteredAssets}
                 selectable
                 selectedRows={selectedRows}
                 onSelectionChange={setSelectedRows}

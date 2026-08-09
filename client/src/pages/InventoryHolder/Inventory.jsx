@@ -18,6 +18,8 @@ function Inventory() {
 
     const [inventory, setInventory] = useState([]);
 
+    const [search, setSearch] = useState("");
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -72,6 +74,23 @@ function Inventory() {
 
     }, []);
 
+    const filteredInventory = inventory.filter((item) => {
+
+        const searchTerm = search.toLowerCase().trim();
+
+        if (!searchTerm) {
+            return true;
+        }
+
+        return (
+            String(item.srNo).toLowerCase().includes(searchTerm) ||
+            String(item.ledger).toLowerCase().includes(searchTerm) ||
+            String(item.asset).toLowerCase().includes(searchTerm) ||
+            String(item.status).toLowerCase().includes(searchTerm)
+        );
+
+    });
+
     const columns = [
         {
             header: "Sr. No.",
@@ -125,8 +144,10 @@ function Inventory() {
                 <div className="w-full md:max-w-md">
 
                     <Input
-                    placeholder="Search inventory..."
-                    icon={FaSearch}
+                        placeholder="Search inventory..."
+                        icon={FaSearch}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
 
                 </div>
@@ -191,7 +212,7 @@ function Inventory() {
             <div className="overflow-x-auto">
                 <Table
                     columns={columns}
-                    data={inventory}
+                    data={filteredInventory}
                     selectable
                     selectedRows={selectedRows}
                     onSelectionChange={setSelectedRows}

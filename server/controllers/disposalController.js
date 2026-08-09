@@ -295,6 +295,8 @@ exports.getDisposals = async (req, res) => {
 
                 i.ledger_number,
 
+                i.sr_no,
+
                 a.asset_name
 
             FROM asset_disposal ad
