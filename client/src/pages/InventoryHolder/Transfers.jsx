@@ -36,31 +36,51 @@ function Transfers() {
         },
         {
             header: "Asset Name / Nomenclature",
-            accessor: "asset",
+            accessor: "name",
         },
         {
-            header: "Available Qty",
+            header: "Available Quantity/Unit",
             accessor: "quantity",
         },
         {
-            header: "Transfer Qty",
+            header: "Transfer Quantity/Unit",
             accessor: "quantity",
 
-            render: (value, row) => (
-                <Input
-                    type="number"
-                    min="1"
-                    max={value}
-                    placeholder="Enter Qty"
-                    value={transferQuantities[row.id] || ""}
-                    onChange={(e) =>
-                        setTransferQuantities({
-                            ...transferQuantities,
-                            [row.id]: Number(e.target.value),
-                        })
-                    }
-                />
-            ),
+            render: (value, row) => {
+
+                const availableQuantity =
+                    parseFloat(value) || 0;
+
+                const unit =
+                    row.unit || "";
+
+                return (
+                    <div className="flex items-center gap-2">
+
+                        <Input
+                            type="number"
+                            min="1"
+                            max={availableQuantity}
+                            placeholder="Enter Qty"
+                            value={transferQuantities[row.id] || ""}
+                            onChange={(e) =>
+                                setTransferQuantities({
+                                    ...transferQuantities,
+                                    [row.id]: Number(e.target.value),
+                                })
+                            }
+                        />
+
+                        {unit && (
+                            <span className="text-sm text-gray-600 whitespace-nowrap">
+                                {unit}
+                            </span>
+                        )}
+
+                    </div>
+                );
+
+            },
         },
     ];
 
@@ -87,13 +107,14 @@ function Transfers() {
                 );
 
                 setTransfers(
-                    transfersResponse.data.data.map((transfer, index) => ({
+                    transfersResponse.data.data.map((transfer) => ({
                         id: transfer.transfer_request_id,
-                        srNo: index + 1,
+                        srNo: transfer.sr_no,
                         ledger: transfer.ledger_number,
                         asset: transfer.asset_name,
                         from: transfer.requested_by,
                         to: transfer.to_user,
+                        quantity: `${transfer.quantity} ${transfer.unit || ""}`.trim(),
 
                         sameGroup: transfer.same_group_transfer,
                         sourceStatus: transfer.source_holder_status,
@@ -186,6 +207,10 @@ function Transfers() {
         {
             header: "To User",
             accessor: "to",
+        },
+        {
+            header: "Quantity/Unit",
+            accessor: "quantity"
         },
         {
             header: "Status",

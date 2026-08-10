@@ -18,6 +18,14 @@ function Profile() {
 
   const [loading, setLoading] = useState(true);
 
+  const [passwordData, setPasswordData] = useState({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+  });
+
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
   useEffect(() => {
 
       const loadProfile = async () => {
@@ -61,6 +69,46 @@ function Profile() {
   const statusLabel = {
     1: "Active",
     0: "Inactive",
+  };
+
+  const handlePasswordChange = async (e) => {
+
+    e.preventDefault();
+
+    setPasswordLoading(true);
+
+    try {
+
+        await api.put(
+            "/users/change-password",
+            passwordData
+        );
+
+        toast.success(
+            "Password changed successfully."
+        );
+
+        setPasswordData({
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        toast.error(
+            error.response?.data?.message ||
+            "Failed to change password."
+        );
+
+    } finally {
+
+        setPasswordLoading(false);
+
+    }
+
   };
 
   return (
@@ -156,6 +204,74 @@ function Profile() {
           />
         </div>
       </FormCard>
+
+      <FormCard title="Change Password">
+
+        <form
+            className="space-y-6"
+            onSubmit={handlePasswordChange}
+        >
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <Input
+                    label="Current Password"
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                        setPasswordData({
+                            ...passwordData,
+                            currentPassword: e.target.value,
+                        })
+                    }
+                    required
+                />
+
+                <Input
+                    label="New Password"
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                        setPasswordData({
+                            ...passwordData,
+                            newPassword: e.target.value,
+                        })
+                    }
+                    required
+                />
+
+                <Input
+                    label="Confirm New Password"
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                        setPasswordData({
+                            ...passwordData,
+                            confirmPassword: e.target.value,
+                        })
+                    }
+                    required
+                />
+
+            </div>
+
+            <div className="flex justify-end">
+
+                <Button
+                    type="submit"
+                    variant="success"
+                    disabled={passwordLoading}
+                >
+                    {passwordLoading
+                        ? "Changing Password..."
+                        : "Change Password"}
+                </Button>
+
+            </div>
+
+        </form>
+
+    </FormCard>
     </div>
   );
 }

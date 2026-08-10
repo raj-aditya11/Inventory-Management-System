@@ -3,7 +3,7 @@ import api from "../../services/api";
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaFileExcel } from "react-icons/fa";
 
 import Button from "../../components/common/Button"
 import PageHeader from "../../components/common/PageHeader";
@@ -101,7 +101,7 @@ function Disposal() {
             accessor: "asset",
         },
         {
-            header: "Quantity",
+            header: "Quantity/Unit",
             accessor: "quantity",
         },
         {
@@ -136,7 +136,7 @@ function Disposal() {
 
                         asset: item.asset_name,
 
-                        quantity: item.quantity,
+                        quantity: `${item.quantity} ${item.unit || ""}`.trim(),
 
                         reason: item.reason,
 
@@ -163,6 +163,50 @@ function Disposal() {
         loadHistory();
 
     }, []);
+
+    const handleExportExcel = async () => {
+
+        try {
+
+            const response = await api.get(
+                "/disposals/export/my",
+                {
+                    responseType: "blob",
+                }
+            );
+
+            const url = window.URL.createObjectURL(
+                new Blob([response.data])
+            );
+
+            const link = document.createElement("a");
+
+            link.href = url;
+
+            link.setAttribute(
+                "download",
+                "My_Disposals.xlsx"
+            );
+
+            document.body.appendChild(link);
+
+            link.click();
+
+            link.remove();
+
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error(
+                "Failed to generate disposal list."
+            );
+
+        }
+
+    };
 
     const filteredHistory = history.filter((item) => {
 
@@ -284,6 +328,8 @@ function Disposal() {
 
     };
 
+    
+
     return (
         <div className="space-y-6">
             <PageHeader
@@ -335,14 +381,26 @@ function Disposal() {
 
             )}
 
-            <div className="w-full md:max-w-md">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
 
-                <Input
-                    placeholder="Search disposal requests..."
-                    icon={FaSearch}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
+                <div className="w-full md:max-w-md">
+
+                    <Input
+                        placeholder="Search disposal requests..."
+                        icon={FaSearch}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+
+                </div>
+
+                <Button
+                    icon={FaFileExcel}
+                    variant="success"
+                    onClick={handleExportExcel}
+                >
+                    Export Excel
+                </Button>
 
             </div>
 

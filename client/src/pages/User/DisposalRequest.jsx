@@ -3,7 +3,7 @@ import api from "../../services/api";
 import toast from "react-hot-toast";
 import { useLocation } from "react-router-dom";
 
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaFileExcel } from "react-icons/fa";
 
 import PageHeader from "../../components/common/PageHeader";
 import Input from "../../components/common/Input";
@@ -94,7 +94,7 @@ function DisposalRequest() {
             accessor: "asset",
         },
         {
-            header: "Quantity",
+            header: "Quantity/Unit",
             accessor: "quantity",
         },
         {
@@ -186,7 +186,7 @@ function DisposalRequest() {
 
                     asset: item.asset_name,
 
-                    quantity: item.quantity,
+                    quantity: `${item.quantity} ${item.unit || ""}`.trim(),
 
                     reason: item.reason,
 
@@ -242,6 +242,50 @@ function DisposalRequest() {
 
     });
 
+    const handleExportExcel = async () => {
+
+        try {
+
+            const response = await api.get(
+                "/disposals/export/my",
+                {
+                    responseType: "blob",
+                }
+            );
+
+            const url = window.URL.createObjectURL(
+                new Blob([response.data])
+            );
+
+            const link = document.createElement("a");
+
+            link.href = url;
+
+            link.setAttribute(
+                "download",
+                "My_Disposals.xlsx"
+            );
+
+            document.body.appendChild(link);
+
+            link.click();
+
+            link.remove();
+
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error(
+                "Failed to generate disposal list."
+            );
+
+        }
+
+    };
+
     return(
         <div className="space-y-6">
             <PageHeader
@@ -292,15 +336,24 @@ function DisposalRequest() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
 
                 <div className="w-full md:max-w-md">
+
                     <Input
                         placeholder="Search disposal history..."
                         icon={FaSearch}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
+
                 </div>
 
-                
+                <Button
+                    icon={FaFileExcel}
+                    variant="success"
+                    onClick={handleExportExcel}
+                >
+                    Export Excel
+                </Button>
+
             </div>
 
             

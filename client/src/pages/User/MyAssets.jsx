@@ -36,7 +36,7 @@ function MyAssets() {
                         srNo: item.sr_no,
                         ledger: item.ledger_number,
                         name: item.asset_name,
-                        quantity: item.quantity,
+                        quantity: `${item.quantity} ${item.unit || ""}`.trim(),
                         status:
                             item.status === 1
                                 ? "Assigned"

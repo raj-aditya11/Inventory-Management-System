@@ -12,6 +12,7 @@ const {
     getUserById,
     updateUser,
     deleteUser,
+    changePassword
 } = require("../controllers/userController");
 
 router.post(
@@ -33,6 +34,12 @@ router.get(
     authMiddleware,
     roleMiddleware("ADMIN", "INVENTORY_HOLDER", "USER"),
     getMyProfile
+);
+
+router.put(
+    "/change-password",
+    authMiddleware,
+    changePassword
 );
 
 router.get(

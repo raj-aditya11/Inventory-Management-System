@@ -22,6 +22,7 @@ function ReceiveStock() {
         sr_no: "",
         ledger_number: "",
         quantity_received: "",
+        unit:"",
         purchase_cost: "",
         purchase_date: "",
         remarks: "",
@@ -48,6 +49,7 @@ function ReceiveStock() {
                 sr_no: "",
                 ledger_number: "",
                 quantity_received: "",
+                unit:"",
                 purchase_cost: "",
                 purchase_date: "",
                 remarks: "",
@@ -135,6 +137,20 @@ function ReceiveStock() {
                             quantity_received: e.target.value,
                         })
                     }
+                    required
+                />
+
+                <Input
+                    label="Unit"
+                    placeholder="e.g. kg, litre, piece, set"
+                    value={formData.unit}
+                    onChange={(e) =>
+                        setFormData({
+                            ...formData,
+                            unit: e.target.value,
+                        })
+                    }
+                    required
                 />
 
                 <Input

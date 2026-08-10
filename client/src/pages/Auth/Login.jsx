@@ -135,14 +135,6 @@ function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                 />
 
-                <label className="flex items-center gap-2 text-sm text-slate-600">
-
-                <input type="checkbox" />
-
-                Remember Me
-
-                </label>
-
                 <Button
                     className="w-full py-3"
                     onClick={handleLogin}

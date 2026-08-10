@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const ExcelJS = require("exceljs");
 
 exports.disposeAsset = async (req, res) => {
     let connection;
@@ -297,6 +298,8 @@ exports.getDisposals = async (req, res) => {
 
                 i.sr_no,
 
+                i.unit,
+
                 a.asset_name
 
             FROM asset_disposal ad
@@ -343,6 +346,534 @@ exports.getDisposals = async (req, res) => {
 
 };
 
+exports.exportDisposalList = async (req, res) => {
+
+    try {
+
+        const userId = req.user.id;
+
+        const [disposals] = await db.query(
+            `
+            SELECT
+                ad.disposal_id,
+                ad.quantity,
+                ad.reason,
+                ad.remarks,
+                ad.disposed_at,
+
+                i.sr_no,
+                i.ledger_number,
+                i.purchase_cost,
+                i.purchase_date,
+                i.unit,
+
+                a.asset_name
+
+            FROM asset_disposal ad
+
+            INNER JOIN asset_assignment aa
+                ON ad.assignment_id = aa.assignment_id
+
+            INNER JOIN inventory i
+                ON aa.inventory_id = i.inventory_id
+
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+
+            INNER JOIN users u
+                ON ad.disposed_by = u.id
+
+            INNER JOIN users holder
+                ON holder.id = ?
+
+            WHERE
+                ad.is_deleted = 'no'
+                AND u.group_id = holder.group_id
+
+            ORDER BY ad.disposed_at ASC
+            `,
+            [userId]
+        );
+
+        const workbook = new ExcelJS.Workbook();
+
+        const worksheet = workbook.addWorksheet(
+            "List of Items for Disposal"
+        );
+
+        /*
+         * Title
+         */
+
+        worksheet.mergeCells("A1:M1");
+
+        const titleCell = worksheet.getCell("A1");
+
+        titleCell.value =
+            "CENTRE FOR FIRE, EXPLOSIVE ENVIRONMENT SAFETY, DELHI - 110054";
+
+        titleCell.font = {
+            bold: true,
+            size: 14,
+        };
+
+        titleCell.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+        };
+
+        worksheet.mergeCells("A2:M2");
+
+        const subtitleCell = worksheet.getCell("A2");
+
+        subtitleCell.value = "LIST OF ITEMS FOR DISPOSAL";
+
+        subtitleCell.font = {
+            bold: true,
+            size: 13,
+        };
+
+        subtitleCell.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+        };
+
+        /*
+         * Headers
+         */
+
+        const headers = [
+            "Sl. No.",
+            "Item No./Ledger No./Page No.",
+            "Nomenclature",
+            "A/U",
+            "Serviceable/Unserviceable",
+            "Cost of Procurement",
+            "Date/Year of Procurement",
+            "No. of years of useful service",
+            "No. of years of non-utilization",
+            "Reasons for disposal",
+            "Recommended/Not Recommended",
+            "Disposal Action",
+            "Salvage/Scrap Weight",
+        ];
+
+        worksheet.addRow(headers);
+
+        const headerRow = worksheet.getRow(3);
+
+        headerRow.font = {
+            bold: true,
+        };
+
+        headerRow.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+            wrapText: true,
+        };
+
+        /*
+         * Data
+         */
+
+        disposals.forEach((item, index) => {
+
+            const purchaseYear = item.purchase_date
+                ? new Date(item.purchase_date).getFullYear()
+                : null;
+
+            const currentYear = new Date().getFullYear();
+
+            const usefulYears = purchaseYear
+                ? Math.max(currentYear - purchaseYear, 0)
+                : "";
+
+            worksheet.addRow([
+                index + 1,
+
+                item.ledger_number || "",
+
+                item.asset_name || "",
+
+                `${item.quantity || 0} ${item.unit || ""}`.trim(),
+
+                "",
+
+                item.purchase_cost != null
+                    ? item.purchase_cost
+                    : "",
+
+                purchaseYear || "",
+
+                usefulYears,
+
+                "",
+
+                item.reason || "",
+
+                "",
+
+                "",
+
+                "",
+            ]);
+
+        });
+
+        /*
+         * Formatting
+         */
+
+        worksheet.columns = [
+            { width: 10 },
+            { width: 25 },
+            { width: 40 },
+            { width: 15 },
+            { width: 25 },
+            { width: 20 },
+            { width: 20 },
+            { width: 22 },
+            { width: 25 },
+            { width: 25 },
+            { width: 25 },
+            { width: 20 },
+            { width: 20 },
+        ];
+
+        worksheet.eachRow((row, rowNumber) => {
+
+            row.alignment = {
+                vertical: "center",
+                wrapText: true,
+            };
+
+            if (rowNumber >= 3) {
+
+                row.eachCell((cell) => {
+
+                    cell.border = {
+                        top: {
+                            style: "thin",
+                        },
+                        left: {
+                            style: "thin",
+                        },
+                        bottom: {
+                            style: "thin",
+                        },
+                        right: {
+                            style: "thin",
+                        },
+                    };
+
+                });
+
+            }
+
+        });
+
+        worksheet.getRow(1).height = 25;
+        worksheet.getRow(2).height = 25;
+        worksheet.getRow(3).height = 45;
+
+        /*
+         * Send Excel file
+         */
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            'attachment; filename="List_of_Items_for_Disposal.xlsx"'
+        );
+
+        await workbook.xlsx.write(res);
+
+        res.end();
+
+    } catch (error) {
+
+        console.error(
+            "Export Disposal List Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to generate disposal Excel file.",
+        });
+
+    }
+
+};
+
+exports.exportMyDisposalList = async (req, res) => {
+
+    try {
+
+        const userId = req.user.id;
+
+        const [disposals] = await db.query(
+            `
+            SELECT
+                ad.disposal_id,
+                ad.quantity,
+                ad.reason,
+                ad.remarks,
+                ad.disposed_at,
+
+                i.sr_no,
+                i.ledger_number,
+                i.purchase_cost,
+                i.purchase_date,
+                i.unit,
+
+                a.asset_name
+
+            FROM asset_disposal ad
+
+            INNER JOIN asset_assignment aa
+                ON ad.assignment_id = aa.assignment_id
+
+            INNER JOIN inventory i
+                ON aa.inventory_id = i.inventory_id
+
+            INNER JOIN assets a
+                ON i.asset_id = a.asset_id
+
+            WHERE
+                ad.disposed_by = ?
+                AND ad.is_deleted = 'no'
+
+            ORDER BY ad.disposed_at ASC
+            `,
+            [userId]
+        );
+
+        const workbook = new ExcelJS.Workbook();
+
+        const worksheet = workbook.addWorksheet(
+            "My Disposals"
+        );
+
+        /*
+         * Title
+         */
+
+        worksheet.mergeCells("A1:M1");
+
+        const titleCell = worksheet.getCell("A1");
+
+        titleCell.value =
+            "CENTRE FOR FIRE, EXPLOSIVE ENVIRONMENT SAFETY, DELHI - 110054";
+
+        titleCell.font = {
+            bold: true,
+            size: 14,
+        };
+
+        titleCell.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+        };
+
+        worksheet.mergeCells("A2:M2");
+
+        const subtitleCell = worksheet.getCell("A2");
+
+        subtitleCell.value =
+            "LIST OF ITEMS DISPOSED";
+
+        subtitleCell.font = {
+            bold: true,
+            size: 13,
+        };
+
+        subtitleCell.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+        };
+
+        /*
+         * Headers
+         */
+
+        const headers = [
+            "Sl. No.",
+            "Item No./Ledger No./Page No.",
+            "Nomenclature",
+            "A/U",
+            "Serviceable/Unserviceable",
+            "Cost of Procurement",
+            "Date/Year of Procurement",
+            "No. of years of useful service",
+            "No. of years of non-utilization",
+            "Reasons for disposal",
+            "Recommended/Not Recommended",
+            "Disposal Action",
+            "Salvage/Scrap Weight",
+        ];
+
+        worksheet.addRow(headers);
+
+        const headerRow = worksheet.getRow(3);
+
+        headerRow.font = {
+            bold: true,
+        };
+
+        headerRow.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+            wrapText: true,
+        };
+
+        /*
+         * Data
+         */
+
+        disposals.forEach((item, index) => {
+
+            const purchaseYear = item.purchase_date
+                ? new Date(item.purchase_date).getFullYear()
+                : null;
+
+            const currentYear =
+                new Date().getFullYear();
+
+            const usefulYears = purchaseYear
+                ? Math.max(
+                    currentYear - purchaseYear,
+                    0
+                )
+                : "";
+
+            worksheet.addRow([
+                index + 1,
+
+                item.ledger_number || "",
+
+                item.asset_name || "",
+
+                `${item.quantity || 0} ${item.unit || ""}`.trim(),
+
+                "",
+
+                item.purchase_cost != null
+                    ? item.purchase_cost
+                    : "",
+
+                purchaseYear || "",
+
+                usefulYears,
+
+                "",
+
+                item.reason || "",
+
+                "",
+
+                "",
+
+                "",
+            ]);
+
+        });
+
+        /*
+         * Formatting
+         */
+
+        worksheet.columns = [
+            { width: 10 },
+            { width: 25 },
+            { width: 40 },
+            { width: 15 },
+            { width: 25 },
+            { width: 20 },
+            { width: 20 },
+            { width: 22 },
+            { width: 25 },
+            { width: 25 },
+            { width: 25 },
+            { width: 20 },
+            { width: 20 },
+        ];
+
+        worksheet.eachRow((row, rowNumber) => {
+
+            row.alignment = {
+                vertical: "center",
+                wrapText: true,
+            };
+
+            if (rowNumber >= 3) {
+
+                row.eachCell((cell) => {
+
+                    cell.border = {
+                        top: {
+                            style: "thin",
+                        },
+                        left: {
+                            style: "thin",
+                        },
+                        bottom: {
+                            style: "thin",
+                        },
+                        right: {
+                            style: "thin",
+                        },
+                    };
+
+                });
+
+            }
+
+        });
+
+        worksheet.getRow(1).height = 25;
+        worksheet.getRow(2).height = 25;
+        worksheet.getRow(3).height = 45;
+
+        /*
+         * Send Excel file
+         */
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            'attachment; filename="My_Disposals.xlsx"'
+        );
+
+        await workbook.xlsx.write(res);
+
+        res.end();
+
+    } catch (error) {
+
+        console.error(
+            "Export My Disposal List Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Failed to generate disposal Excel file.",
+        });
+
+    }
+
+};
+
 exports.getGroupDisposals = async (req, res) => {
 
     try {
@@ -370,6 +901,8 @@ exports.getGroupDisposals = async (req, res) => {
                 aa.inventory_id,
 
                 i.ledger_number,
+                i.sr_no,
+                i.unit,
 
                 a.asset_name
 

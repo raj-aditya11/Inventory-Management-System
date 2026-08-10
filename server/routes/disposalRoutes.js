@@ -5,6 +5,8 @@ const {
     disposeAsset,
     getDisposals,
     getGroupDisposals,
+    exportDisposalList,
+    exportMyDisposalList,
     getDisposalById
 } = require("../controllers/disposalController");
 
@@ -30,6 +32,18 @@ router.get(
     authMiddleware,
     roleMiddleware("INVENTORY_HOLDER"),
     getGroupDisposals
+);
+
+router.get(
+    "/export",
+    authMiddleware,
+    exportDisposalList
+);
+
+router.get(
+    "/export/my",
+    authMiddleware,
+    exportMyDisposalList
 );
 
 router.get(

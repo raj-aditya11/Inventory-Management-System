@@ -302,10 +302,12 @@ exports.getAllTransferRequests = async (req, res) => {
             SELECT
                 tr.transfer_request_id,
                 i.ledger_number,
+                i.sr_no,
                 a.asset_name,
                 ru.user_name AS requested_by,
                 tu.user_name AS to_user,
                 tr.quantity,
+                i.unit,
                 tr.reason,
                 tr.source_holder_status,
                 tr.destination_holder_status,
@@ -367,6 +369,7 @@ exports.getMyTransferRequests = async (req, res) => {
                 i.ledger_number,
                 i.sr_no,
                 a.asset_name,
+                i.unit,
 
                 CONCAT_WS(
                     ' ',
@@ -456,6 +459,7 @@ exports.getPendingTransferRequests = async (req, res) => {
                 tr.transfer_request_id,
                 i.ledger_number,
                 a.asset_name,
+                i.unit,
 
                 CONCAT(
                     ru.first_name,

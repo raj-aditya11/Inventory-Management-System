@@ -300,6 +300,7 @@ exports.getMyAssignments = async (req, res) => {
                 i.ledger_number,
                 a.asset_name,
                 aa.quantity,
+                i.unit,
                 aa.assigned_date,
                 aa.remarks,
                 aa.status

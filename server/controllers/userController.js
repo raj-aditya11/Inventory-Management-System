@@ -635,3 +635,143 @@ exports.deleteUser = async (req, res) => {
         });
     }
 };
+
+exports.changePassword = async (req, res) => {
+
+    try {
+
+        const userId = req.user.id;
+
+        const {
+            currentPassword,
+            newPassword,
+            confirmPassword,
+        } = req.body;
+
+
+        // Validate fields
+
+        if (
+            !currentPassword ||
+            !newPassword ||
+            !confirmPassword
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "All password fields are required.",
+            });
+        }
+
+
+        // Check new password confirmation
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "New password and confirmation do not match.",
+            });
+        }
+
+
+        // Basic password length validation
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: "New password must be at least 8 characters long.",
+            });
+        }
+
+
+        // Prevent using the same password
+
+        if (currentPassword === newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "New password must be different from the current password.",
+            });
+        }
+
+
+        // Get current password from database
+
+        const [users] = await db.query(
+            `
+            SELECT password
+            FROM users
+            WHERE id = ?
+            AND is_deleted = 'no'
+            `,
+            [userId]
+        );
+
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+
+
+        // Verify current password
+
+        const isMatch = await bcrypt.compare(
+            currentPassword,
+            users[0].password
+        );
+
+
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: "Current password is incorrect.",
+            });
+        }
+
+
+        // Hash new password
+
+        const hashedPassword = await bcrypt.hash(
+            newPassword,
+            10
+        );
+
+
+        // Update password
+
+        await db.query(
+            `
+            UPDATE users
+            SET password = ?
+            WHERE id = ?
+            AND is_deleted = 'no'
+            `,
+            [
+                hashedPassword,
+                userId,
+            ]
+        );
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Password changed successfully.",
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Change Password Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error.",
+        });
+
+    }
+
+};

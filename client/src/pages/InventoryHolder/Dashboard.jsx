@@ -25,7 +25,7 @@ function Dashboard() {
     { header: "Ledger No.", accessor: "ledger" },
     { header: "Asset Name/Nomenclature", accessor: "asset" },
     { header: "Action", accessor: "action" },
-    { header: "Quantity", accessor: "quantity" },
+    { header: "Quantity/Unit", accessor: "quantity" },
     { header: "Date", accessor: "date" },
   ];
 
@@ -61,7 +61,7 @@ function Dashboard() {
                             ? "Asset Assigned"
                             : item.action,
 
-                      quantity: item.quantity,
+                      quantity: `${item.quantity || 0} ${item.unit || ""}`.trim(),
 
                       date: new Date(
                           item.created_at

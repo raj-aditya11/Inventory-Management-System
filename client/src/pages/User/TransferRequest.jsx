@@ -94,6 +94,9 @@ function TransferRequest() {
                             asset:
                                 request.asset_name,
 
+                            quantity: 
+                                `${request.quantity} ${request.unit || ""}`.trim(),
+
                             transferTo:
                                 request.transfer_to_name,
 
@@ -151,7 +154,7 @@ function TransferRequest() {
 
                 assignment_id: asset.id,
 
-                quantity: asset.quantity,
+                quantity: parseFloat(asset.quantity),
 
             }));
 
@@ -213,6 +216,11 @@ function TransferRequest() {
         {
             header: "Asset Name/ Nomenclature",
             accessor: "asset",
+        },
+
+        {
+            header: "Quantity/Unit",
+            accessor: "quantity",
         },
 
         {
@@ -356,6 +364,12 @@ function TransferRequest() {
         );
 
 
+    const selectedAsset = myAssets.find(
+        asset =>
+            Number(asset.assignment_id) ===
+            Number(formData.assignment_id)
+    );
+
     return (
 
         <div className="space-y-6">
@@ -482,12 +496,14 @@ function TransferRequest() {
                                 label="Quantity"
                                 type="number"
                                 min="1"
-                                value={
-                                    formData.quantity
-                                }
-                                onChange={
-                                    handleChange
-                                }
+                                value={formData.quantity}
+                                onChange={handleChange}
+                            />
+
+                            <Input
+                                label="Unit"
+                                value={selectedAsset?.unit || ""}
+                                disabled
                             />
 
                         </div>

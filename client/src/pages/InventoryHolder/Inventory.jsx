@@ -42,7 +42,7 @@ function Inventory() {
 
                         asset: item.asset_name,
 
-                        quantity: item.quantity_available,
+                        quantity: `${item.quantity_available} ${item.unit || ""}`.trim(),
 
                         condition:
                             item.asset_condition === 1

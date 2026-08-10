@@ -34,7 +34,8 @@ function MyAssetsInv() {
                         srNo: item.sr_no,
                         ledger: item.ledger_number,
                         name: item.asset_name,
-                        quantity: item.quantity,
+                        quantity: `${item.quantity} ${item.unit || ""}`.trim(),
+                        unit: item.unit,
                         assignment_id: item.assignment_id,
                         inventory_id: item.inventory_id,
                         status:

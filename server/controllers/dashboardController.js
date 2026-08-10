@@ -70,6 +70,11 @@ exports.getAdminDashboard = async (req, res) => {
                     ah.remarks,
                     ah.created_at,
 
+                    i.ledger_number,
+                    i.unit, 
+
+                    a.asset_name,
+
                     COALESCE(
                         CONCAT(
                             u.first_name,
@@ -80,6 +85,12 @@ exports.getAdminDashboard = async (req, res) => {
                     ) AS performed_by
 
                 FROM asset_history ah
+
+                LEFT JOIN inventory i
+                    ON ah.inventory_id = i.inventory_id
+
+                LEFT JOIN assets a
+                   ON i.asset_id = a.asset_id
 
                 LEFT JOIN users u
                     ON ah.performed_by = u.id
@@ -266,6 +277,7 @@ exports.getInventoryHolderDashboard = async (req, res) => {
                     ah.created_at,
 
                     i.ledger_number,
+                    i.unit,
 
                     a.asset_name
 
@@ -409,6 +421,7 @@ exports.getUserDashboard = async (req, res) => {
                     ah.remarks,
                     ah.created_at,
                     i.ledger_number,
+                    i.unit,
                     a.asset_name
 
                 FROM asset_history ah

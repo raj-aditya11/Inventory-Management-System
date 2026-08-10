@@ -7,6 +7,7 @@ exports.createInventory = async (req, res) => {
             sr_no,
             ledger_number,
             quantity_received,
+            unit,
             purchase_cost,
             purchase_date,
             received_by,
@@ -20,6 +21,7 @@ exports.createInventory = async (req, res) => {
             !sr_no ||
             !ledger_number ||
             !quantity_received ||
+            !unit||
             purchase_cost === undefined ||
             !purchase_date ||
             !received_by
@@ -40,6 +42,7 @@ exports.createInventory = async (req, res) => {
         // Trim strings
         const trimmedAssetName = asset_name.trim();
         const trimmedLedgerNumber = ledger_number.trim();
+        const trimmedUnit = unit.trim();
         const trimmedRemarks = remarks?.trim() || null;
 
         // Validate
@@ -48,6 +51,20 @@ exports.createInventory = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Asset name is required.",
+            });
+        }
+
+        if (!trimmedUnit) {
+            return res.status(400).json({
+                success: false,
+                message: "Unit is required.",
+            });
+        }
+
+        if (trimmedUnit.length > 20) {
+            return res.status(400).json({
+                success: false,
+                message: "Unit cannot exceed 20 characters.",
             });
         }
 
@@ -197,6 +214,7 @@ exports.createInventory = async (req, res) => {
                 ledger_number,
                 quantity_received,
                 quantity_available,
+                unit,
                 quantity_disposed,
                 purchase_cost,
                 purchase_date,
@@ -204,7 +222,7 @@ exports.createInventory = async (req, res) => {
                 remarks,
                 status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `,
             [
                 assetId,
@@ -212,6 +230,7 @@ exports.createInventory = async (req, res) => {
                 trimmedLedgerNumber,
                 quantityReceived,
                 quantityReceived,
+                trimmedUnit,
                 0,
                 purchaseCost,
                 purchase_date,
@@ -257,6 +276,7 @@ exports.getAllInventory = async (req, res) => {
                     i.quantity_received,
                     i.quantity_available,
                     i.quantity_disposed,
+                    i.unit,
                     i.purchase_cost,
                     i.purchase_date,
                     i.received_by,
@@ -282,6 +302,7 @@ exports.getAllInventory = async (req, res) => {
                     i.quantity_received,
                     i.quantity_available,
                     i.quantity_disposed,
+                    i.unit,
                     i.purchase_cost,
                     i.purchase_date,
                     i.received_by,

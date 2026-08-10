@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaFileExcel } from "react-icons/fa";
 
 import api from "../../services/api";
 import toast from "react-hot-toast";
 import PageHeader from "../../components/common/PageHeader";
 import Input from "../../components/common/Input";
+import Button from "../../components/common/Button";
 import Table from "../../components/common/Table";
 
 const GroupDisposals = () => {
@@ -22,8 +23,8 @@ const GroupDisposals = () => {
                 const response = await api.get("/disposals/group");
 
                 setDisposals(
-                    response.data.disposals.map((item, index) => ({
-                        srNo: index + 1,
+                    response.data.disposals.map((item) => ({
+                        srNo: item.sr_no,
 
                         ledger: item.ledger_number,
 
@@ -31,7 +32,7 @@ const GroupDisposals = () => {
 
                         asset: item.asset_name,
 
-                        quantity: item.quantity,
+                        quantity: `${item.quantity} ${item.unit || ""}`.trim(),
 
                         reason: item.reason,
 
@@ -82,7 +83,7 @@ const GroupDisposals = () => {
             accessor: "asset",
         },
         {
-            header: "Qty",
+            header: "Quantity/Unit",
             accessor: "quantity",
         },
         {
@@ -99,6 +100,50 @@ const GroupDisposals = () => {
         },
     ];
 
+    const handleExportExcel = async () => {
+
+        try {
+
+            const response = await api.get(
+                "/disposals/export",
+                {
+                    responseType: "blob",
+                }
+            );
+
+            const url = window.URL.createObjectURL(
+                new Blob([response.data])
+            );
+
+            const link = document.createElement("a");
+
+            link.href = url;
+
+            link.setAttribute(
+                "download",
+                "List_of_Items_for_Disposal.xlsx"
+            );
+
+            document.body.appendChild(link);
+
+            link.click();
+
+            link.remove();
+
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+
+            console.error(error);
+
+            toast.error(
+                "Failed to generate disposal list."
+            );
+
+        }
+
+    };
+
     return (
         <div className="space-y-6">
             <PageHeader
@@ -106,12 +151,30 @@ const GroupDisposals = () => {
                 subtitle="View all asset disposals made by members of your group."
             />
 
-            <Input
-                placeholder="Search by User, Asset or Ledger Number..."
-                icon={FaSearch}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+
+                <div className="w-full md:max-w-md">
+
+                    <Input
+                        placeholder="Search by User, Asset or Ledger Number..."
+                        icon={FaSearch}
+                        value={searchTerm}
+                        onChange={(e) =>
+                            setSearchTerm(e.target.value)
+                        }
+                    />
+
+                </div>
+
+                <Button
+                    icon={FaFileExcel}
+                    variant="success"
+                    onClick={handleExportExcel}
+                >
+                    Export Excel
+                </Button>
+
+            </div>
 
             <Table
                 columns={columns}
