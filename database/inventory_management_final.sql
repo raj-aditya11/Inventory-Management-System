@@ -1,4 +1,4 @@
-ÿþ-- MySQL dump 10.13  Distrib 8.0.46, for Win64 (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.46, for Win64 (x86_64)
 --
 -- Host: localhost    Database: inventory_management
 -- ------------------------------------------------------
@@ -31,16 +31,16 @@ CREATE TABLE `asset_assignment` (
   `assigned_date` date NOT NULL,
   `remarks` text,
   `status` tinyint DEFAULT '1',
-  `is_deleted` enum('yes','no'NOT NULL DEFAULT 'no',
+  `is_deleted` enum('yes','no') NOT NULL DEFAULT 'no',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`assignment_id`),
   KEY `fk_assignment_inventory_idx` (`inventory_id`),
   KEY `fk_asset_assignment_users1_idx` (`user_id`),
   KEY `fk_asset_assignment_users1_idx1` (`assigned_by`),
   CONSTRAINT `fk_assignment_assigned_by` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_assignment_inventory` FOREIGN KEY (`inventory_id`REFERENCES `inventory` (`inventory_id`ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_assignment_users` FOREIGN KEY (`user_id`REFERENCES `users` (`id`ON DELETE RESTRICT ON UPDATE CASCADE
-ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  CONSTRAINT `fk_assignment_inventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`inventory_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_assignment_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -72,7 +72,7 @@ CREATE TABLE `asset_disposal` (
   PRIMARY KEY (`disposal_id`),
   KEY `fk_disposal_assignment_idx` (`assignment_id`),
   KEY `fk_disposal_requests_users1_idx` (`disposed_by`),
-  CONSTRAINT `fk_disposal_assignment` FOREIGN KEY (`assignment_id`REFERENCES `asset_assignment` (`assignment_id`ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_disposal_assignment` FOREIGN KEY (`assignment_id`) REFERENCES `asset_assignment` (`assignment_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_disposal_requested_by` FOREIGN KEY (`disposed_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -100,16 +100,16 @@ CREATE TABLE `asset_history` (
   `performed_by` int NOT NULL,
   `action` enum('RECEIVED','ASSIGNED','TRANSFERRED','DISPOSED','UPDATED','CANCELLED','REJECTED') NOT NULL,
   `quantity` int NOT NULL,
-  `reference_table` varchar(50DEFAULT NULL,
+  `reference_table` varchar(50) DEFAULT NULL,
   `reference_id` int DEFAULT NULL,
   `remarks` text,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`history_id`),
   KEY `fk_asset_history_inventory1_idx` (`inventory_id`),
   KEY `fk_asset_history_users1_idx` (`performed_by`),
-  CONSTRAINT `fk_history_inventory` FOREIGN KEY (`inventory_id`REFERENCES `inventory` (`inventory_id`ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_performed_by_id` FOREIGN KEY (`performed_by`REFERENCES `users` (`id`ON DELETE RESTRICT ON UPDATE CASCADE
-ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  CONSTRAINT `fk_history_inventory` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`inventory_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_performed_by_id` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -131,8 +131,8 @@ DROP TABLE IF EXISTS `assets`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `assets` (
   `asset_id` int NOT NULL AUTO_INCREMENT,
-  `asset_name` varchar(150NOT NULL,
-  `unit` varchar(20NOT NULL,
+  `asset_name` varchar(150) NOT NULL,
+  `unit` varchar(20) NOT NULL,
   `description` text,
   `status` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -165,7 +165,7 @@ CREATE TABLE `cadres` (
   `description` text,
   `status` tinyint DEFAULT '1',
   PRIMARY KEY (`cadre_id`)
-ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -187,7 +187,7 @@ DROP TABLE IF EXISTS `designations`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `designations` (
   `desig_id` int NOT NULL AUTO_INCREMENT,
-  `designation_name` varchar(100NOT NULL,
+  `designation_name` varchar(100) NOT NULL,
   `description` text,
   `status` tinyint DEFAULT '1',
   PRIMARY KEY (`desig_id`)
@@ -217,9 +217,9 @@ CREATE TABLE `groups` (
   `description` text,
   `status` tinyint DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `is_deleted` enum('yes','no'NOT NULL DEFAULT 'no',
+  `is_deleted` enum('yes','no') NOT NULL DEFAULT 'no',
   PRIMARY KEY (`group_id`)
-ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -241,11 +241,11 @@ DROP TABLE IF EXISTS `internal_designations`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `internal_designations` (
   `internal_desig_id` int NOT NULL AUTO_INCREMENT,
-  `designation_name` varchar(100NOT NULL,
+  `designation_name` varchar(100) NOT NULL,
   `description` text,
   `status` tinyint DEFAULT '1',
   PRIMARY KEY (`internal_desig_id`)
-ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -272,19 +272,19 @@ CREATE TABLE `inventory` (
   `ledger_number` varchar(50) DEFAULT NULL,
   `quantity_received` int NOT NULL DEFAULT '0',
   `quantity_available` int NOT NULL DEFAULT '0',
-  `unit` varchar(20NOT NULL DEFAULT 'Nos.',
-  `purchase_cost` decimal(12,2DEFAULT NULL,
+  `unit` varchar(20) NOT NULL DEFAULT 'Nos.',
+  `purchase_cost` decimal(12,2) DEFAULT NULL,
   `purchase_date` date DEFAULT NULL,
   `received_by` int DEFAULT NULL,
   `remarks` text,
   `status` tinyint DEFAULT '1',
-  `is_deleted` enum('yes','no'NOT NULL DEFAULT 'no',
+  `is_deleted` enum('yes','no') NOT NULL DEFAULT 'no',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `quantity_disposed` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`inventory_id`),
   KEY `fk_inventory_assets1_idx` (`asset_id`),
   KEY `fk_inventory_received_by_idx` (`received_by`),
-  CONSTRAINT `fk_inventory_assets` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`asset_id`ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_inventory_assets` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`asset_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_inventory_received_by` FOREIGN KEY (`received_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -309,14 +309,14 @@ DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE `notifications` (
   `notification_id` int NOT NULL AUTO_INCREMENT,
   `receiver_id` int NOT NULL,
-  `title` varchar(50NOT NULL,
+  `title` varchar(50) NOT NULL,
   `message` text NOT NULL,
   `is_read` tinyint NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`notification_id`),
   KEY `fk_notification_receiver_idx` (`receiver_id`),
-  CONSTRAINT `fk_notifications_receiver` FOREIGN KEY (`receiver_id`REFERENCES `users` (`id`ON DELETE RESTRICT ON UPDATE CASCADE
-ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  CONSTRAINT `fk_notifications_receiver` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -342,12 +342,12 @@ CREATE TABLE `transfer_requests` (
   `requested_by` int NOT NULL,
   `to_user` int NOT NULL,
   `quantity` int NOT NULL,
-  `same_group_transfer` enum('yes','no'NOT NULL DEFAULT 'no',
+  `same_group_transfer` enum('yes','no') NOT NULL DEFAULT 'no',
   `reason` text,
   `source_holder_status` tinyint DEFAULT NULL,
   `destination_holder_status` tinyint DEFAULT NULL,
   `status` tinyint DEFAULT '1',
-  `is_deleted` enum('yes','no'NOT NULL DEFAULT 'no',
+  `is_deleted` enum('yes','no') NOT NULL DEFAULT 'no',
   `requested_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `source_approved_at` timestamp NULL DEFAULT NULL,
   `destination_approved_at` timestamp NULL DEFAULT NULL,
@@ -382,25 +382,25 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
   `first_name` varchar(100) NOT NULL,
-  `middle_name` varchar(50DEFAULT NULL,
+  `middle_name` varchar(50) DEFAULT NULL,
   `last_name` varchar(80) DEFAULT NULL,
-  `gen` varchar(20DEFAULT NULL,
+  `gen` varchar(20) DEFAULT NULL,
   `dob` date DEFAULT NULL,
   `mobile_no` varchar(15) DEFAULT NULL,
-  `email_id` varchar(100DEFAULT NULL,
+  `email_id` varchar(100) DEFAULT NULL,
   `cadre_id` int DEFAULT NULL,
   `desig_id` int DEFAULT NULL,
   `internal_desig_id` int DEFAULT NULL,
   `role` enum('ADMIN','INVENTORY_HOLDER','USER') NOT NULL,
   `telephone_no` varchar(11) DEFAULT NULL,
-  `user_name` varchar(30NOT NULL,
+  `user_name` varchar(30) NOT NULL,
   `password` varchar(255) NOT NULL,
   `status` tinyint NOT NULL DEFAULT '1',
   `is_gazetted` enum('yes','no') DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `is_deleted` enum('yes','no'NOT NULL DEFAULT 'no',
+  `is_deleted` enum('yes','no') NOT NULL DEFAULT 'no',
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `user_type` enum('permanent','temporary','generic'DEFAULT NULL,
+  `user_type` enum('permanent','temporary','generic') DEFAULT NULL,
   `group_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_username` (`user_name`),
@@ -409,10 +409,10 @@ CREATE TABLE `users` (
   KEY `fk_users_cadres_idx` (`cadre_id`),
   KEY `fk_users_designations_idx` (`desig_id`),
   KEY `fk_users_internal_designations_idx` (`internal_desig_id`),
-  CONSTRAINT `fk_users_cadres` FOREIGN KEY (`cadre_id`REFERENCES `cadres` (`cadre_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_users_designations` FOREIGN KEY (`desig_id`REFERENCES `designations` (`desig_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_users_groups` FOREIGN KEY (`group_id`REFERENCES `groups` (`group_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_users_internal_designations` FOREIGN KEY (`internal_desig_id`REFERENCES `internal_designations` (`internal_desig_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT `fk_users_cadres` FOREIGN KEY (`cadre_id`) REFERENCES `cadres` (`cadre_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_users_designations` FOREIGN KEY (`desig_id`) REFERENCES `designations` (`desig_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_users_groups` FOREIGN KEY (`group_id`) REFERENCES `groups` (`group_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_users_internal_designations` FOREIGN KEY (`internal_desig_id`) REFERENCES `internal_designations` (`internal_desig_id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -443,4 +443,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-11  3:00:17
+-- Dump completed on 2026-08-12  1:50:23
